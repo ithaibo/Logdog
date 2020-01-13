@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,9 +17,10 @@ public class MainActivity extends AppCompatActivity {
         // Example of a call to a native method
         TextView tv = findViewById(R.id.sample_text);
 
-        String path = getExternalFilesDir("").getAbsolutePath();
+        File file = new File(getExternalFilesDir(null), "logdog");
+        String path = file.getAbsolutePath();
         Log.i("Main", "path: " + path);
 
-        Logdog.getInstance().w("Main", "path: " + path);
+        Logdog.getInstance().w(path, "Main path: " + path);
     }
 }

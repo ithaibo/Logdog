@@ -1,8 +1,9 @@
 #include <jni.h>
 #include <string>
 #include <android/log.h>
-#include "alog.h"
 #include <stdio.h>
+#include "alog.h"
+#include "logdog.h"
 
 using namespace std;
 
@@ -33,18 +34,16 @@ Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logp
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_andy_logdog_Logdog_native_1write(JNIEnv *env, jobject thiz, jstring tag,
+Java_com_andy_logdog_Logdog_native_1write(JNIEnv *env, jobject thiz, jstring path,
                                           jstring content) {
-    const char *tag_chars = (*env).GetStringUTFChars(tag, JNI_FALSE);
+    const char *path_chars = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
 
-//    __android_log_print(ANDROID_LOG_DEBUG, "logdog", printf("%s\n", tag_chars));
-//    __android_log_print(ANDROID_LOG_DEBUG, "logdog", "%s\n", content_str);
+    LOGD("[mmap]:path: %s", path_chars);
+    LOGD("[mmap]:content: %s", content_chars);
 
-    LOGD("[%s]:\t%s", tag_chars, content_chars);
-    LOGD("%s\n", content_chars);
-    (*env).ReleaseStringUTFChars(tag, tag_chars);
+    MmapWrite(path_chars, content_chars);
+
+    (*env).ReleaseStringUTFChars(path, path_chars);
     (*env).ReleaseStringUTFChars(content, content_chars);
-    // TODO: implement native_write()
-
 }

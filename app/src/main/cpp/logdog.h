@@ -1,0 +1,17 @@
+//
+// Created by haibo.wu on 2020/1/13.
+//
+
+#ifndef LOGDOG_LOGDOG_H
+#define LOGDOG_LOGDOG_H
+
+
+
+
+/**
+ * save content to file with mmap
+ * @param toSave something to save to file
+ */
+void MmapWrite(char const* filePath, char const* toSave);
+
+#endif //LOGDOG_LOGDOG_H

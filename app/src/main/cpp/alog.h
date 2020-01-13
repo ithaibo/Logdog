@@ -5,6 +5,7 @@
 #ifndef LOGDOG_ALOG_H
 #define LOGDOG_ALOG_H
 
+#include <android/log.h>
 
 #define LOG_TAG "NATIVELOG"
 #define DEBUG

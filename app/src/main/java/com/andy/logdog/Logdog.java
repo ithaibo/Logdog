@@ -28,10 +28,10 @@ public class Logdog {
     }
 
 
-    public void w(String tag, String content) {
-        native_write(tag, content);
+    public void w(String path, String content) {
+        native_write(path, content);
     }
 
     public native void native_init(@NonNull String pathLog);
-    public native void native_write(@NonNull String label, @NonNull String content);
+    public native void native_write(@NonNull String path, @NonNull String content);
 }
