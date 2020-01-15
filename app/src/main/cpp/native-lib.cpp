@@ -3,7 +3,6 @@
 #include <android/log.h>
 #include <stdio.h>
 #include <iostream>
-#include <fstream>
 #include "alog.h"
 #include "logdog.h"
 
@@ -27,6 +26,8 @@ char *log_path = NULL;
 
 
 FILE *fp = NULL;
+
+
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -62,14 +63,7 @@ Java_com_andy_logdog_Logdog_write_1file(JNIEnv *env, jobject thiz, jstring path,
     const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char* contentSave = (*env).GetStringUTFChars(content, JNI_FALSE);
 
-    fstream fout;
-    fout.open(filePath, ios::out);
-    if(!fout.is_open()) {
-        LOGE("open file, %s failed", filePath);
-    } else {
-        fout.write(contentSave, strlen(contentSave));
-        fout.close();
-    }
+    writeFile(filePath, contentSave);
 
     releaseStringUTFChars(env, path, filePath);
     releaseStringUTFChars(env, content, contentSave);

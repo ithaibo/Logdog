@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <fstream>
 #include "logdog.h"
 #include "alog.h"
 
@@ -87,4 +88,15 @@ const char* readWithMmap(char const *filePath) {
     munmap(buffer, pageSize);
 
     return backContent;
+}
+
+void writeFile(const char *filePath, const char *contentSave) {
+    std::fstream fout;
+    fout.open(filePath, std::ios::out);
+    if (!fout.is_open()) {
+        LOGE("open file, %s failed", filePath);
+    } else {
+        fout.write(contentSave, strlen(contentSave));
+        fout.close();
+    }
 }
