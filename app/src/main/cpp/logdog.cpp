@@ -23,13 +23,13 @@ void MmapWrite(char const* filePath, char const* toSave) {
 
 
     //get page size
-    size_t pageSize = getpagesize();
+    size_t pageSize = (size_t)getpagesize();
     LOGD("[mmap]: page size: %lu", pageSize);
 
 
     //do mmap
     char* buffer;
-    buffer = (char*)mmap(0, pageSize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    buffer = (char*)mmap(NULL, pageSize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
     close(fd);
 
     if(NULL == buffer) {
@@ -53,4 +53,38 @@ void MmapWrite(char const* filePath, char const* toSave) {
 
     LOGD("[mmap]: memory copy done");
     munmap(buffer, pageSize);
+}
+
+const char* readWithMmap(char const *filePath) {
+    int fd = open(filePath, O_RDWR);
+    if(fd == -1) {
+        LOGE("[mmap]: file, path: %s open failed, reason: %s",
+             filePath,
+             strerror(errno));
+        return NULL;
+    }
+
+    //get page size
+    size_t pageSize = (size_t)getpagesize();
+    LOGD("[mmap]: page size: %lu", pageSize);
+
+    //do mmap
+    char* buffer;
+    buffer = (char*)mmap(NULL, pageSize, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    close(fd);
+    if(NULL == buffer) {
+        LOGE("[mmap]: buffer pointer is null");
+        return NULL;
+    }
+    if(buffer == MAP_FAILED) {
+        LOGE("[mmap]: mmap failed, reason: %s",strerror(errno));
+        return NULL;
+    }
+    LOGI("[mmap]: read something from file, %s: \n%s", filePath, buffer);
+    const int lengthSaved = strlen(buffer);
+    char* backContent = new char[lengthSaved];
+    strcpy(backContent, buffer);
+    munmap(buffer, pageSize);
+
+    return backContent;
 }

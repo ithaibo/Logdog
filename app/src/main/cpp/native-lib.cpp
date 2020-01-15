@@ -2,10 +2,18 @@
 #include <string>
 #include <android/log.h>
 #include <stdio.h>
+#include <iostream>
+#include <fstream>
 #include "alog.h"
 #include "logdog.h"
 
 using namespace std;
+
+
+static void releaseStringUTFChars(JNIEnv *env, jstring path, const char* chars) {
+    if(nullptr == env) return;
+    (*env).ReleaseStringUTFChars(path, chars);
+}
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_andy_logdog_MainActivity_stringFromJNI(
@@ -47,3 +55,33 @@ Java_com_andy_logdog_Logdog_native_1write(JNIEnv *env, jobject thiz, jstring pat
     (*env).ReleaseStringUTFChars(path, path_chars);
     (*env).ReleaseStringUTFChars(content, content_chars);
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_andy_logdog_Logdog_write_1file(JNIEnv *env, jobject thiz, jstring path, jstring content) {
+    const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
+    const char* contentSave = (*env).GetStringUTFChars(content, JNI_FALSE);
+
+    fstream fout;
+    fout.open(filePath, ios::out);
+    if(!fout.is_open()) {
+        LOGE("open file, %s failed", filePath);
+    } else {
+        fout.write(contentSave, strlen(contentSave));
+        fout.close();
+    }
+
+    releaseStringUTFChars(env, path, filePath);
+    releaseStringUTFChars(env, content, contentSave);
+}
+
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_andy_logdog_Logdog_read_1file(JNIEnv *env, jobject thiz, jstring path) {
+    const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
+    const char* contentFromFile = readWithMmap(filePath);
+    releaseStringUTFChars(env, path, filePath);
+    return (*env).NewStringUTF(contentFromFile);
+}
+

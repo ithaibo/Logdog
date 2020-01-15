@@ -14,4 +14,6 @@
  */
 void MmapWrite(char const* filePath, char const* toSave);
 
+const char* readWithMmap(char const* filePath);
+
 #endif //LOGDOG_LOGDOG_H
