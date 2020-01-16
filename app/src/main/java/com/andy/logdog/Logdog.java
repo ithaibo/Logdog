@@ -1,12 +1,15 @@
 package com.andy.logdog;
 
 import android.content.Context;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 
 import java.io.File;
-import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 public class Logdog {
     static String path;
@@ -31,12 +34,22 @@ public class Logdog {
 
 
     public void w(String path, String content) {
-//        native_write(path, content);
-        write_file(path, content);
+        mmap_write(path, content);
     }
 
     public native void native_init(@NonNull String pathLog);
-    public native void native_write(@NonNull String path, @NonNull String content);
+    public native void mmap_write(@NonNull String path, @NonNull String content);
     public native void write_file(@NonNull String path, @NonNull String content);
     public native String read_file(@NonNull String path);
+
+    public void mmapW(@NonNull String path, @NonNull String content) {
+        try {
+            RandomAccessFile randomAccessFile = new RandomAccessFile(path, "r");
+            FileChannel fileChannel = randomAccessFile.getChannel();
+            long size = fileChannel.size();
+            MappedByteBuffer buffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, size, content.getBytes().length);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

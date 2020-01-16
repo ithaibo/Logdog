@@ -21,8 +21,23 @@ public class MainActivity extends AppCompatActivity {
         // Example of a call to a native method
         findViewById(R.id.btn_write).setOnClickListener(v-> writeInputToFile());
         findViewById(R.id.btn_read).setOnClickListener(v-> readFile());
+        findViewById(R.id.btn_write_mmap).setOnClickListener(v-> writeInputWithMMAP());
 
         Logdog.getInstance().init(this);
+    }
+
+    private void writeInputWithMMAP() {
+        Logdog.getInstance().w(Logdog.path, getInput());
+    }
+
+    private String getInput() {
+        String input;
+        if (editText.getText().length() <= 0){
+           input = "";
+        } else {
+           input = editText.getText().toString();
+        }
+        return input;
     }
 
     private void readFile() {
@@ -32,8 +47,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeInputToFile() {
-        if (editText.getText().length() <= 0) return;
-        String input = editText.getText().toString();
-        Logdog.getInstance().w(Logdog.path, input);
+        Logdog.getInstance().write_file(Logdog.path, getInput());
     }
 }

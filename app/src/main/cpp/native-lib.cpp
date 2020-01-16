@@ -14,20 +14,6 @@ static void releaseStringUTFChars(JNIEnv *env, jstring path, const char* chars) 
     (*env).ReleaseStringUTFChars(path, chars);
 }
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_andy_logdog_MainActivity_stringFromJNI(
-        JNIEnv *env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
-    return env->NewStringUTF(hello.c_str());
-}
-
-char *log_path = NULL;
-
-
-FILE *fp = NULL;
-
-
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -43,7 +29,7 @@ Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logp
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_andy_logdog_Logdog_native_1write(JNIEnv *env, jobject thiz, jstring path,
+Java_com_andy_logdog_Logdog_mmap_1write(JNIEnv *env, jobject thiz, jstring path,
                                           jstring content) {
     const char *path_chars = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
@@ -76,6 +62,6 @@ Java_com_andy_logdog_Logdog_read_1file(JNIEnv *env, jobject thiz, jstring path) 
     const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char* contentFromFile = readWithMmap(filePath);
     releaseStringUTFChars(env, path, filePath);
-    return (*env).NewStringUTF(contentFromFile);
+    return (*env).NewStringUTF(contentFromFile== nullptr? "" : contentFromFile);
 }
 

@@ -18,4 +18,6 @@ const char* readWithMmap(char const* filePath);
 
 void writeFile(const char *filePath, const char *contentSave);
 
+size_t getFileSize(const char *filePath);
+
 #endif //LOGDOG_LOGDOG_H
