@@ -5,6 +5,7 @@
 #include <iostream>
 #include "alog.h"
 #include "logdog.h"
+#include "base64.h"
 
 using namespace std;
 
@@ -60,8 +61,19 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_andy_logdog_Logdog_read_1file(JNIEnv *env, jobject thiz, jstring path) {
     const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
-    const char* contentFromFile = readWithMmap(filePath);
+    const char* contentFromFile = readFile(filePath);
     releaseStringUTFChars(env, path, filePath);
     return (*env).NewStringUTF(contentFromFile== nullptr? "" : contentFromFile);
 }
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring content) {
+    const char* raw = (*env).GetStringUTFChars(content, JNI_FALSE);
+    char* afterBase64 = base64_encode(raw);
+    LOGD("[base64] raw: %s, size: %ld", raw, strlen(raw));
+    LOGD("[base64] afterBase64: %s, size: %ld", afterBase64, strlen(afterBase64));
+    LOGD("[base64] afterBase64Decode: %s", base64_decode(afterBase64));
+
+    releaseStringUTFChars(env, content, raw);
+}

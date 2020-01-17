@@ -35,12 +35,14 @@ public class Logdog {
 
     public void w(String path, String content) {
         mmap_write(path, content);
+//        printBase64(content);
     }
 
     public native void native_init(@NonNull String pathLog);
     public native void mmap_write(@NonNull String path, @NonNull String content);
     public native void write_file(@NonNull String path, @NonNull String content);
     public native String read_file(@NonNull String path);
+    public native void printBase64(@NonNull String content);
 
     public void mmapW(@NonNull String path, @NonNull String content) {
         try {

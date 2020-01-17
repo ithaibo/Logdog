@@ -10,9 +10,23 @@
 #include <sys/stat.h>
 #include "logdog.h"
 #include "alog.h"
+#include "base64.h"
 
+#define NUMINTS  (52)
+#define FILESIZE (NUMINTS * sizeof(char))
 
+static char* buffer = nullptr;
+static size_t length = 0;
+static size_t off = 0;
 
+void doMemcpy(const char* toSave, size_t lengthToSave) {
+    if(nullptr == buffer) return;
+    LOGD("[write]: do memory copy...");
+    memcpy(buffer+length, toSave, lengthToSave);
+    length+=lengthToSave;
+    off -= lengthToSave;
+    LOGD("[write]: do memory copy done, off now: %ld", off);
+}
 
 void MmapWrite(char const* filePath, char const* toSave) {
     if(nullptr == toSave) {
@@ -20,62 +34,68 @@ void MmapWrite(char const* filePath, char const* toSave) {
         return;
     }
 
-    size_t pageSize = getFileSize(filePath);
-    if(strlen(toSave) <= 0) {
-        LOGE("[mmap]: MmapWriteinvoked, toSave is empty");
-        return;
-    }
+    const char* saveBase64 = base64_encode(toSave);
 
-    if(pageSize <= 0) {
-        if(0>=strlen(toSave)) {
-            LOGE("[mmap]: MmapWriteinvoked, file is empty, and toSave is empty, write empty to target file");
-            writeFile(filePath, "");
-        } else {
-            writeFile(filePath, toSave);
+    size_t lengthToSave = strlen(saveBase64);
+    LOGD("[write]: content after base64: %s", saveBase64);
+
+    unsigned int indexToCopy = 0;
+
+    long offLong = off;
+    long needLong = lengthToSave;
+    if((offLong - needLong) <= 0 || nullptr == buffer) {
+        LOGI("[append]: copy last space, buffer before copy: %s", buffer);
+        LOGI("[append]: length: %ld", length);
+        char *temp = nullptr;
+        if(indexToCopy >0) {
+            char arr[FILESIZE];
+            temp = arr;
+            memcpy(temp, buffer, FILESIZE);
+            LOGI("[append]: buffer full: %s", temp);
         }
-        return;
+
+        int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, O_APPEND);
+        if(fd == -1) {
+            LOGE("[mmap]: file, path: %s open failed, reason: %s", filePath, strerror(errno));
+            return;
+        }
+
+        if(nullptr != buffer) {
+            msync(buffer, FILESIZE, MS_SYNC);
+            ftruncate(fd, length + FILESIZE);
+            buffer = (char*)mremap(buffer, length, length + FILESIZE,MAP_SHARED);
+            if(buffer == MAP_FAILED) {
+                LOGE("[mmap]: mmap failed, reason: %s",strerror(errno));
+                return;
+            }
+            if(nullptr != temp) {
+                memcpy(buffer, temp, length);
+                off += FILESIZE;
+            }
+        } else {
+            LOGI("[mmap]: create map buffer");
+            ftruncate(fd, FILESIZE);
+            buffer = (char*)mmap(nullptr, FILESIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+            if(buffer == MAP_FAILED) {
+                LOGE("[mmap]: mmap failed, reason: %s",strerror(errno));
+                return;
+            }
+            off = FILESIZE;
+        }
+        close(fd);
+
+        LOGE("[mmap]: length of buffer map: %ld", strlen(buffer));
     }
 
-    int fd = open(filePath, O_RDWR | O_CREAT | O_APPEND | O_CLOEXEC);
-    if(fd == -1) {
-        LOGE("[mmap]: file, path: %s open failed, reason: %s", filePath, strerror(errno));
-        return;
-    }
-
-    size_t length = strlen(toSave);
-
-    struct stat stat;
-    fstat(fd, &stat);
-
-//    lseek(fd, stat.st_size, SEEK_SET);
-
-    //do mmap
-    char* buffer = (char*)mmap(nullptr, stat.st_size, PROT_WRITE|PROT_READ, MAP_SHARED, fd, 0);
-    size_t lengthFile = strlen(buffer);
-    close(fd);
-
-    if(nullptr == buffer) {
-        LOGE("[mmap]: buffer pointer is null");
-        return;
-    }
-
-    if(buffer == MAP_FAILED) {
-        LOGE("[mmap]: mmap failed, reason: %s",strerror(errno));
-        return;
-    }
-
-    LOGD("[mmap]: length of buffer: %lu", lengthFile);
-    memcpy(buffer+lengthFile, toSave, length);
-    munmap(buffer, stat.st_size);
+    doMemcpy(saveBase64 + indexToCopy, lengthToSave - indexToCopy);
 }
 
-const char* readWithMmap(char const *filePath) {
-    size_t lengthF = getFileSize(filePath);
-    LOGE("[mmap]: file size: %ld", lengthF);
+const char* readFile(char const *filePath) {
+    const size_t lengthF = getFileSize(filePath);
+    LOGD("[mmap]: file size: %ld", lengthF);
     if(0 >= lengthF) {
         return nullptr;
     }
-
     int fd = open(filePath, O_RDONLY);
     if(fd == -1) {
         LOGE("[mmap]: file, path: %s open failed, reason: %s",
@@ -83,35 +103,9 @@ const char* readWithMmap(char const *filePath) {
              strerror(errno));
         return nullptr;
     }
-
-    lseek(fd, 0, SEEK_SET);
-
-    //get page size
-    size_t pageSize = sizeof(filePath) * 20;//(size_t)getpagesize();
-//    size_t pageSize = getFileSize(filePath);
-    LOGD("[mmap]: page size: %lu", pageSize);
-
-    struct stat stat;
-    fstat(fd, &stat);
-    //do mmap
-    char* buffer = (char*)mmap(nullptr, stat.st_size, PROT_READ, MAP_SHARED, fd, 0);
-    close(fd);
-    if(NULL == buffer) {
-        LOGE("[mmap]: buffer pointer is null");
-        return nullptr;
-    }
-    if(buffer == MAP_FAILED) {
-        LOGE("[mmap]: mmap failed, reason: %s",strerror(errno));
-        return nullptr;
-    }
-    LOGD("[mmap]: to get length of buffer map, %s", buffer);
-    LOGI("[mmap]: read something from file, size: %d\n", pageSize);
-    char* backContent = new char[pageSize];
-//    memset(backContent, 0, (size_t)pageSize + 1);
-    memcpy(backContent, buffer, (size_t)pageSize);
-    munmap(buffer, stat.st_size);
-
-    return backContent;
+    char* bufferRead = new char[lengthF+1];
+    read(fd, bufferRead, lengthF);
+    return base64_decode(bufferRead);
 }
 
 void writeFile(const char *filePath, const char *contentSave) {

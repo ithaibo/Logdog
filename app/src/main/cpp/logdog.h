@@ -14,7 +14,7 @@
  */
 void MmapWrite(char const* filePath, char const* toSave);
 
-const char* readWithMmap(char const* filePath);
+const char* readFile(char const *filePath);
 
 void writeFile(const char *filePath, const char *contentSave);
 
