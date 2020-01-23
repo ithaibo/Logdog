@@ -1,5 +1,5 @@
 #include <jni.h>
-#include <string>
+#include <string.h>
 #include <android/log.h>
 #include <stdio.h>
 #include <iostream>
@@ -10,9 +10,9 @@
 using namespace std;
 
 
-static void releaseStringUTFChars(JNIEnv *env, jstring path, const char* chars) {
+static void releaseStringUTFChars(JNIEnv *env, jstring jstr, const char* chars) {
     if(nullptr == env) return;
-    (*env).ReleaseStringUTFChars(path, chars);
+    (*env).ReleaseStringUTFChars(jstr, chars);
 }
 
 
@@ -76,4 +76,12 @@ Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring conte
     LOGD("[base64] afterBase64Decode: %s", base64_decode(afterBase64));
 
     releaseStringUTFChars(env, content, raw);
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_andy_logdog_Logdog_append(JNIEnv *env, jobject thiz, jstring content) {
+    const char* contentC = (*env).GetStringUTFChars(content, JNI_FALSE);
+    write(contentC);
+    releaseStringUTFChars(env, content, contentC);
 }
