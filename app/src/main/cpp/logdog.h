@@ -20,6 +20,5 @@ void writeFile(const char *filePath, const char *contentSave);
 
 size_t getFileSize(const char *filePath);
 
-void write(const char* logContent);
 
 #endif //LOGDOG_LOGDOG_H

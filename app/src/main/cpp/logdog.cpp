@@ -58,7 +58,7 @@ void MmapWrite(char const *filePath, char const *toSave) {
             memcpy(temp, buffer, FILESIZE);
             LOGI("[append]: buffer full: %s", temp);
         }
-        int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, O_APPEND);
+        int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, O_RDWR);
         if (fd == -1) {
             LOGE("[mmap]: file, path: %s open failed, reason: %s", filePath, strerror(errno));
             return;
@@ -138,34 +138,4 @@ size_t getFileSize(const char *filePath) {
     long lengthF = ftell(file);
     fclose(file);
     return static_cast<size_t>(lengthF);
-}
-
-
-void write(const char* logContent) {
-    if(nullptr == logContent) return;
-    size_t logLength = strlen(logContent);
-    if(0>= logLength) return;
-
-    LOGD("[write] size: %lu, logContent: %s", logLength, logContent);
-
-    if(nullptr == logBuffer) {
-        const size_t lengthBuffer = 1+logLength;
-        logBuffer = new char[lengthBuffer];
-        //clear
-        memset(logBuffer, 0, logLength);
-        memcpy(logBuffer, logContent, logLength);
-        LOGD("[write] logBuffer: %s", logBuffer);
-    }
-    else {
-        char* temp = logBuffer;
-        LOGD("[write] logBuffer before append: %s", temp);
-        size_t tempLength = strlen(temp);
-        const unsigned long lengthBuffer = 1+tempLength+logLength;
-        logBuffer = new char[lengthBuffer];
-        //clear
-        memset(logBuffer, 0, (size_t) logLength);
-        memcpy(logBuffer, temp, tempLength);
-        memcpy(logBuffer+tempLength, logContent, logLength);
-        LOGD("[write] logBuffer after append: %s", logBuffer);
-    }
 }

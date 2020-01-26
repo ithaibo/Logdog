@@ -77,11 +77,3 @@ Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring conte
 
     releaseStringUTFChars(env, content, raw);
 }
-
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_andy_logdog_Logdog_append(JNIEnv *env, jobject thiz, jstring content) {
-    const char* contentC = (*env).GetStringUTFChars(content, JNI_FALSE);
-    write(contentC);
-    releaseStringUTFChars(env, content, contentC);
-}
