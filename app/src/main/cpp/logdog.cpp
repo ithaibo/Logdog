@@ -16,8 +16,9 @@
 
 #define NUMINTS  (52)
 #define FILESIZE (NUMINTS * sizeof(char))
+#define    FILE_MODE    (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
 
-static char *buffer = nullptr;
+static = nullptr;
 static size_t length = 0;
 static size_t off = 0;
 
@@ -42,8 +43,52 @@ void MmapWrite(char const *filePath, char const *toSave) {
     size_t lengthToSave = strlen(saveBase64);
     LOGD("[write]: content after base64: %s", saveBase64);
     unsigned int indexToCopy = 0;
-    long offLong = off;
-    long needLong = lengthToSave;
+
+
+    int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, FILE_MODE);
+    if (fd == -1) {
+        LOGE("[mmap]: file, path: %s open failed, reason: %s",
+                filePath,
+                strerror(errno));
+        return;
+    }
+    struct stat statFile;
+    if (fstat(fd, &statFile) < 0) {
+        LOGE("[stat] error");
+        return;
+    }
+    //get file size
+    off_t offLong = static_cast<off_t>(statFile.st_size);
+    size_t needLong = lengthToSave + offLong;
+
+    //设置文件大小
+
+    //内存映射
+
+    //内存拷贝
+
+    off_t fsz = 0;
+    size_t copy_size;
+    while (fsz < needLong) {
+        if ((needLong - fsz) > FILESIZE) {
+            copy_size = FILESIZE;
+        } else {
+            long last = (needLong - copy_size);
+            copy_size = last;
+        }
+        //memory map
+        char *buffer = (char *) mmap(nullptr, copy_size, PROT_WRITE | PROT_READ, MAP_SHARED, fd,
+                                     offLong);
+        if (buffer == MAP_FAILED) {
+            LOGE("[mmap]: mmap failed, reason: %s", strerror(errno));
+            return;
+        }
+        // memory copy
+        memcpy(buffer, toSave, copy_size);
+        //release memory mao
+        offLong += copy_size;
+        fsz += copy_size;
+    }
     if ((offLong - needLong) <= 0 || nullptr == buffer) {
         if (nullptr != buffer) {
             LOGI("[append]: copy last space, buffer before copy: %s", buffer);
@@ -57,11 +102,6 @@ void MmapWrite(char const *filePath, char const *toSave) {
             temp = arr;
             memcpy(temp, buffer, FILESIZE);
             LOGI("[append]: buffer full: %s", temp);
-        }
-        int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, O_RDWR);
-        if (fd == -1) {
-            LOGE("[mmap]: file, path: %s open failed, reason: %s", filePath, strerror(errno));
-            return;
         }
         if (nullptr != buffer) {
             msync(buffer, FILESIZE, MS_SYNC);
@@ -81,10 +121,7 @@ void MmapWrite(char const *filePath, char const *toSave) {
             LOGI("[mmap]: create map buffer");
             ftruncate(fd, FILESIZE);
             buffer = (char *) mmap(nullptr, FILESIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-            if (buffer == MAP_FAILED) {
-                LOGE("[mmap]: mmap failed, reason: %s", strerror(errno));
-                return;
-            }
+
             off = FILESIZE;
         }
         close(fd);

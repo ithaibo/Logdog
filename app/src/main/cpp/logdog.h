@@ -20,5 +20,7 @@ void writeFile(const char *filePath, const char *contentSave);
 
 size_t getFileSize(const char *filePath);
 
+size_t getBufferOffSet();
+
 
 #endif //LOGDOG_LOGDOG_H

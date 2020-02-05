@@ -15,6 +15,8 @@ add_library( # Sets the name of the library.
         logdog.cpp
         base64.h
         base64.cpp
+        Buffer.h
+        Buffer.cpp
         )
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
