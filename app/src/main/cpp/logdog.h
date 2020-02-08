@@ -12,13 +12,15 @@
  * save content to file with mmap
  * @param toSave something to save to file
  */
-void MmapWrite(char const* filePath, char const* toSave);
+//void MmapWrite(char const* filePath, char const* toSave);
 
 const char* readFile(char const *filePath);
 
 void writeFile(const char *filePath, const char *contentSave);
 
 size_t getFileSize(const char *filePath);
+
+size_t obtainFileSize(const char *path);
 
 size_t getBufferOffSet();
 

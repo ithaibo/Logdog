@@ -1,6 +1,7 @@
 package com.andy.logdog;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -35,6 +36,7 @@ public class Logdog {
 
     public void w(String path, String content) {
         mmap_write(path, content);
+        Log.i("Logdog", "write complete");
     }
 
     public native void native_init(@NonNull String pathLog);

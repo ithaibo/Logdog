@@ -18,121 +18,15 @@
 #define FILESIZE (NUMINTS * sizeof(char))
 #define    FILE_MODE    (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
 
-static = nullptr;
 static size_t length = 0;
 static size_t off = 0;
 
 static char *logBuffer = nullptr;
 
-void doMemcpy(const char *toSave, size_t lengthToSave) {
-    if (nullptr == buffer) return;
-    LOGD("[write]: do memory copy...");
-    LOGI("[append]: off: %ld", off);
-    memcpy(buffer + length, toSave, lengthToSave);
-    length += lengthToSave;
-    off -= lengthToSave;
-    LOGD("[write]: do memory copy done, off now: %ld", off);
-}
 
-void MmapWrite(char const *filePath, char const *toSave) {
-    if (nullptr == toSave) {
-        LOGE("[mmap]: MmapWriteinvoked, toSave is null");
-        return;
-    }
-    const char *saveBase64 = base64_encode(toSave);
-    size_t lengthToSave = strlen(saveBase64);
-    LOGD("[write]: content after base64: %s", saveBase64);
-    unsigned int indexToCopy = 0;
-
-
-    int fd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, FILE_MODE);
-    if (fd == -1) {
-        LOGE("[mmap]: file, path: %s open failed, reason: %s",
-                filePath,
-                strerror(errno));
-        return;
-    }
-    struct stat statFile;
-    if (fstat(fd, &statFile) < 0) {
-        LOGE("[stat] error");
-        return;
-    }
-    //get file size
-    off_t offLong = static_cast<off_t>(statFile.st_size);
-    size_t needLong = lengthToSave + offLong;
-
-    //设置文件大小
-
-    //内存映射
-
-    //内存拷贝
-
-    off_t fsz = 0;
-    size_t copy_size;
-    while (fsz < needLong) {
-        if ((needLong - fsz) > FILESIZE) {
-            copy_size = FILESIZE;
-        } else {
-            long last = (needLong - copy_size);
-            copy_size = last;
-        }
-        //memory map
-        char *buffer = (char *) mmap(nullptr, copy_size, PROT_WRITE | PROT_READ, MAP_SHARED, fd,
-                                     offLong);
-        if (buffer == MAP_FAILED) {
-            LOGE("[mmap]: mmap failed, reason: %s", strerror(errno));
-            return;
-        }
-        // memory copy
-        memcpy(buffer, toSave, copy_size);
-        //release memory mao
-        offLong += copy_size;
-        fsz += copy_size;
-    }
-    if ((offLong - needLong) <= 0 || nullptr == buffer) {
-        if (nullptr != buffer) {
-            LOGI("[append]: copy last space, buffer before copy: %s", buffer);
-        }
-        LOGI("[append]: length: %ld", length);
-        //fixme off is negative
-        LOGI("[append]: need length: %ld", needLong);
-        char *temp = nullptr;
-        if (indexToCopy > 0) {
-            char arr[FILESIZE];
-            temp = arr;
-            memcpy(temp, buffer, FILESIZE);
-            LOGI("[append]: buffer full: %s", temp);
-        }
-        if (nullptr != buffer) {
-            msync(buffer, FILESIZE, MS_SYNC);
-            ftruncate(fd, length + FILESIZE + 1);
-            buffer = (char *) mremap(buffer, length, length + FILESIZE + 1, MAP_SHARED);
-            if (buffer == MAP_FAILED) {
-                LOGE("[mmap]: mmap failed, reason: %s", strerror(errno));
-                return;
-            }
-            if (nullptr != temp) {
-                memcpy(buffer, temp, length);
-                off += FILESIZE;
-            }
-            //note: it can't be remove
-            buffer[length] = '\0';
-        } else {
-            LOGI("[mmap]: create map buffer");
-            ftruncate(fd, FILESIZE);
-            buffer = (char *) mmap(nullptr, FILESIZE, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
-
-            off = FILESIZE;
-        }
-        close(fd);
-        LOGE("[mmap]: length of buffer map: %ld", strlen(buffer));
-    }
-
-    doMemcpy(saveBase64 + indexToCopy, lengthToSave - indexToCopy);
-}
 
 const char *readFile(char const *filePath) {
-    const size_t lengthF = getFileSize(filePath);
+    const size_t lengthF = obtainFileSize(filePath);
     LOGD("[mmap]: file size: %ld", lengthF);
     if (0 >= lengthF) {
         return nullptr;
@@ -144,10 +38,13 @@ const char *readFile(char const *filePath) {
              strerror(errno));
         return nullptr;
     }
-    char *bufferRead = new char[lengthF + 1];
-    LOGD("[read]: raw content read, length: %ld", strlen(bufferRead));
+    const size_t length = lengthF /*+ 1*/;
+    char *bufferRead = new char[length];
+    memset(bufferRead, '\0', length);
     read(fd, bufferRead, lengthF);
-    return base64_decode(bufferRead);
+    LOGD("[read]: raw content read, length: %ld", strlen(bufferRead));
+    return bufferRead;
+//    return base64_decode(bufferRead);
 //    return "stub redding";
 }
 
@@ -157,7 +54,7 @@ void writeFile(const char *filePath, const char *contentSave) {
     if (!fout.is_open()) {
         LOGE("open file, %s failed", filePath);
     } else {
-        fout.write(base64_encode(contentSave), strlen(contentSave));
+        fout.write(/*base64_encode(*/contentSave/*)*/, strlen(contentSave));
         fout.close();
     }
 }
@@ -171,8 +68,16 @@ size_t getFileSize(const char *filePath) {
     if (nullptr == file) {
         return 0;
     }
-    fseek(file, 0, SEEK_END);
+    fseek(file, SEEK_SET, SEEK_END);
     long lengthF = ftell(file);
     fclose(file);
     return static_cast<size_t>(lengthF);
+}
+
+size_t obtainFileSize(const char *path) {
+    struct stat buff;
+    if(stat(path, &buff) < 0) {
+        return 0;
+    }
+    return static_cast<size_t>(buff.st_size);
 }

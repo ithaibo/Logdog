@@ -6,6 +6,7 @@
 #include "alog.h"
 #include "logdog.h"
 #include "base64.h"
+#include "Buffer.h"
 
 using namespace std;
 
@@ -21,11 +22,9 @@ JNIEXPORT void JNICALL
 Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logpath) {
     const char *path = (*env).GetStringUTFChars(logpath, JNI_FALSE);
 
-    (*env).ReleaseStringUTFChars(logpath, path);
+//    Buffer::get_instance().mapMemory(path);
 
-    // TODO: create file
-//    create_file();
-    // TODO: mmap
+    (*env).ReleaseStringUTFChars(logpath, path);
 }
 
 extern "C"
@@ -34,14 +33,27 @@ Java_com_andy_logdog_Logdog_mmap_1write(JNIEnv *env, jobject thiz, jstring path,
                                           jstring content) {
     const char *path_chars = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
-
     LOGD("[mmap]:path: %s", path_chars);
     LOGD("[mmap]:content: %s", content_chars);
 
-    MmapWrite(path_chars, content_chars);
+    Buffer buffer = Buffer::get_instance(path_chars);
+    LOGD("address of buffer: %d", &buffer);
+//    buffer.setFilePath(path_chars);
 
+    bool resultAppend = buffer.append(path_chars, content_chars);
+    if(resultAppend) {
+        LOGI("[NativeLib] mmap write success");
+    } else {
+        LOGE("[NativeLib] mmap write fail");
+    }
+//    buffer.setFilePath(nullptr);
+
+    LOGD("[NativeLib-write] release path");
     (*env).ReleaseStringUTFChars(path, path_chars);
+    LOGD("[NativeLib-write] release content");
     (*env).ReleaseStringUTFChars(content, content_chars);
+
+    LOGD("[NativeLib-write] all done");
 }
 
 extern "C"
