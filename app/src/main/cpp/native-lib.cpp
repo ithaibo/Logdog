@@ -16,6 +16,7 @@ static void releaseStringUTFChars(JNIEnv *env, jstring jstr, const char* chars) 
     (*env).ReleaseStringUTFChars(jstr, chars);
 }
 
+static Buffer *bufferStatic = nullptr;
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -23,9 +24,13 @@ Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logp
     const char *path = (*env).GetStringUTFChars(logpath, JNI_FALSE);
 
 //    Buffer::get_instance().mapMemory(path);
+    if(nullptr == bufferStatic) {
+        bufferStatic = &Buffer::get_instance(path);
+    }
 
     (*env).ReleaseStringUTFChars(logpath, path);
 }
+
 
 extern "C"
 JNIEXPORT void JNICALL
@@ -36,11 +41,10 @@ Java_com_andy_logdog_Logdog_mmap_1write(JNIEnv *env, jobject thiz, jstring path,
     LOGD("[mmap]:path: %s", path_chars);
     LOGD("[mmap]:content: %s", content_chars);
 
-    Buffer buffer = Buffer::get_instance(path_chars);
-    LOGD("address of buffer: %d", &buffer);
+    LOGD("address of buffer: %d", bufferStatic);
 //    buffer.setFilePath(path_chars);
 
-    bool resultAppend = buffer.append(path_chars, content_chars);
+    bool resultAppend = bufferStatic->append(path_chars, content_chars);
     if(resultAppend) {
         LOGI("[NativeLib] mmap write success");
     } else {

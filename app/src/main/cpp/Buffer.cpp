@@ -11,6 +11,10 @@
 #include "Buffer.h"
 #include "alog.h"
 #include "logdog.h"
+#include "base64.h"
+
+
+static const size_t UNIT_SIZE = 4096;
 
 
 bool Buffer::mapMemory(const char *filePath, size_t size) {
@@ -69,46 +73,24 @@ bool Buffer::append(const char *path, const char *content) {
     size_t lengthStr = strlen(content);
     size_t lengthToSave = lengthStr * sizeof(char);
 
-    if (!mapMemory(path, lengthToSave > bufferSize ? bufferSize : lengthToSave)) {
-        LOGD("[Buffer-append] create map buffer failed");
+    LOGD("[Buffer-append] invoked, lengthStr: %ld, lengthToSave: %ld", lengthStr, lengthToSave);
+
+    //check fd
+    if(FD_NOT_OPEN == fd) {
         return false;
     }
 
-    memcpy(bufferInternal, content, lengthStr);
-    flush(lengthToSave);
+    if(!ensureFileSize(lengthToSave)) {
+        return false;
+    }
 
-//    size_t offLast = bufferSize - off;
-//    LOGD("[Buffer-append] off last: %ld", offLast);
-//    char *temp = (char *) content;
-//    while (lengthToSave > 0) {
-//        long last = (long) bufferSize - (long) off - (long) lengthToSave;
-//        if (last > 0) {
-//            LOGD("[Buffer-append] buffer last enough");
-//            memcpy(bufferInternal, temp, lengthStr);
-//            break;
-//        } else if (last == 0) {
-//            LOGD("[Buffer-append] buffer last equals length to save");
-//            memcpy(bufferInternal + off, temp, lengthStr);
-//            flush(bufferSize);
-//            break;
-//        } else {
-//            LOGD("[Buffer-append] buffer last not enough, copy and map again");
-//            memcpy(bufferInternal + off, temp, offLast);
-//            LOGD("[Buffer-append] buffer last not enough, copy done");
-//            lengthToSave -= offLast;
-//            temp = temp + offLast;
-//            offLast = 0;
-//            flush(bufferSize);
-//            LOGD("[Buffer-append] buffer last not enough, flush buffer done");
-//            bool remap = mapMemory(path, lengthToSave);
-//            if (!remap) {
-//                LOGD("[Buffer-append] remap failed");
-//                return false;
-//            }
-//            LOGD("[Buffer-append] buffer last not enough, remap buffer done");
-//        }
-//    }
-
+    LOGD("[Buffer-append] actualSize: %ld", actualSize);
+    LOGD("[Buffer-append] buffer str leng: %ld", strlen(bufferInternal));
+//    memcpy(bufferInternal + actualSize, content, lengthToSave);
+    for (int i = 0; i <lengthStr; ++i) {
+        bufferInternal[actualSize+i] = content[i];
+    }
+    actualSize += lengthToSave;
 
     LOGD("[Buffer-append] success");
     return true;
@@ -169,4 +151,182 @@ void Buffer::openFdForReading(const char *path) {
 
 void Buffer::setFilePath(const char *path) {
     filePath = path;
+}
+
+bool Buffer::ensureFileSize(size_t sizeNeed) {
+    size_t sizeOld = fileSize;
+
+    //如果当前的文件和缓冲区大小满足写入的内容，直接返回
+    if ((sizeOld - actualSize) > sizeNeed) {
+        LOGI("[Buffer] size of file and buffer in memory is enough, no need increase");
+        return true;
+    }
+
+    if(fd == FD_NOT_OPEN) {
+        return false;
+    }
+    //增大文件大小，每次最小增加4K
+    while (fileSize < (actualSize + sizeNeed)) {
+        fileSize += UNIT_SIZE;
+    }
+    size_t sizeIncreased = (fileSize - sizeOld);
+    LOGD("[Buffer] file extend, need: %ld, size increased: %ld", sizeNeed, sizeIncreased);
+    if(sizeIncreased <= 0) {
+        return true;
+    }
+    //set file size
+    if(ftruncate(fd, fileSize) != 0) {
+        LOGE("[Buffer] extend file size failed");
+        return false;
+    }
+    LOGD("[Buffer] extend file size succeed");
+
+    //fill zero
+    if(!zeroFill(sizeOld, fileSize - sizeOld)) {
+        return false;
+    }
+    LOGD("[Buffer] fill zero succeed");
+
+    //unmap memory
+    if(nullptr != bufferInternal) {
+        if(munmap(bufferInternal, sizeOld) != 0) {
+            LOGE("[Buffer] release old buffer failed");
+            return false;
+        }
+    }
+    bufferInternal = (char*)mmap(bufferInternal,
+            fileSize,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED,
+            fd,
+            0);
+    if(bufferInternal == MAP_FAILED) {
+        LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
+        return false;
+    }
+    LOGD("[Buffer] create map memory succeed");
+
+    return true;
+}
+
+bool Buffer::zeroFill(off_t start, size_t length) {
+    if(start < 0 || length <= 0) {
+        return false;
+    }
+    if(0 > lseek(fd, start, SEEK_SET)) {
+        LOGE("[Buffer] lseek failed");
+        return false;
+    }
+    static const char zeros[UNIT_SIZE] = {0};
+    while (length >= sizeof(zeros)) {
+        if (write(fd, zeros, sizeof(zeros)) < 0) {
+            LOGE("fail to write fd[%d], error:%s", fd, strerror(errno));
+            return false;
+        }
+        length -= sizeof(zeros);
+    }
+    if (length > 0) {
+        if (write(fd, zeros, length) < 0) {
+            LOGE("fail to write fd[%d], error:%s", fd, strerror(errno));
+            return false;
+        }
+    }
+    return true;
+}
+
+void Buffer::initFile(const char *path) {
+    LOGD("[Buffer] initFile invoked");
+    if(access(path, F_OK) != -1) {
+        //get file size
+        fd = open(path, O_RDWR|O_CREAT, S_IRWXU);
+        size_t fileSizeNow = getFileSize(path);
+//        obtainFileSize(path);
+        LOGD("[Buffer-initFile] file size: %ld, before create map memory", fileSizeNow);
+        //get content size
+        if(fileSizeNow > 0) {
+            openFdForWriting(path);
+            if(lseek(fd, fileSizeNow, SEEK_SET) <0) {
+                return;
+            }
+            bufferInternal = (char *)mmap(nullptr, fileSizeNow, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+            if(bufferInternal == MAP_FAILED) {
+                bufferInternal = nullptr;
+                LOGD("[Buffer-initFile] file exists, before create map memory", fileSizeNow);
+                return;
+            }
+            if(nullptr != bufferInternal) {
+                fileSize = fileSizeNow;
+                //fixme SIGBUS
+                actualSize = strlen(bufferInternal) * sizeof(char);
+                LOGD("[Buffer-initFile] file size: %ld, actualSize: %d", fileSize, actualSize);
+            }
+        } else {
+            fileSize = 0;
+            openFdForWriting(path);
+        }
+
+    } else {
+        fileSize = 0;
+        openFdForWriting(path);
+    }
+}
+
+bool WriteOnce::append(const char *path, const char *content) {
+    if(nullptr == content)return false;
+
+    //encode content with base64
+    char* toSaveEncode = base64_encode(content);
+    size_t length = strlen(toSaveEncode);
+
+    //obtain file size
+    size_t fileSize = obtainFileSize(path);
+    if(fileSize < 1 * 1024 * 1024) {
+        if(-1 ==ftruncate(fd, 1*1024*1024)) {
+            return false;
+        }
+    }
+
+    if(fileSize <= 0) fileSize = 0;
+    LOGD("[WriteOnce] fileSize: %ld", fileSize);
+
+    //open file
+    openFdForWriting(path);
+    if(FD_NOT_OPEN == fd) {
+        return false;
+    }
+
+    //resize file
+    if(-1 == lseek(fd, fileSize + length, SEEK_SET)) {
+        LOGE("[WriteOnce] set file size failed");
+    }
+    LOGD("[WriteOnce] set file size: %ld", (fileSize + length));
+//    write(fd, "", );
+
+    //map file to memory
+    LOGD("[WriteOnce] content size: %ld", length);
+    bufferInternal = (char*) mmap(
+            NULL,
+            length + fileSize,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED,
+            fd,
+            0);
+    if(bufferInternal == MAP_FAILED) {
+        return false;
+    }
+    if(fileSize >1) {
+        LOGD("[WriteOnce] buffer content: %s", base64_decode(bufferInternal));
+    }
+
+    //copy data to memory mapped
+    size_t start = fileSize;
+    memcpy(bufferInternal + start, toSaveEncode, length);
+
+    //un map memory
+    if(munmap(bufferInternal, length + fileSize) == -1) {
+        LOGE("[WriteOnce] unmap failed");
+        return false;
+    }
+    LOGD("[WriteOnce] all done");
+    return true;
 }
