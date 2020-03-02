@@ -19,11 +19,9 @@ public class MainActivity extends AppCompatActivity {
         editText = findViewById(R.id.et);
         tv = findViewById(R.id.tv);
         // Example of a call to a native method
-        findViewById(R.id.btn_write).setOnClickListener(v-> writeInputToFile());
         findViewById(R.id.btn_read).setOnClickListener(v-> readFile());
         findViewById(R.id.btn_write_mmap).setOnClickListener(v-> writeInputWithMMAP());
-
-        Logdog.getInstance().init(this);
+        findViewById(R.id.btn_init).setOnClickListener(v-> Logdog.getInstance().init(getApplication()));
     }
 
     private void writeInputWithMMAP() {
@@ -41,12 +39,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void readFile() {
-        String read = Logdog.getInstance().read_file(Logdog.path);
+        String read = Logdog.getInstance().readFile(Logdog.path);
         Log.i("Main", "read from file: " + read);
         tv.setText(read);
     }
 
-    private void writeInputToFile() {
-        Logdog.getInstance().write_file(Logdog.path, getInput());
-    }
 }

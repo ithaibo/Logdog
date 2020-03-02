@@ -38,14 +38,22 @@ const char *readFile(char const *filePath) {
              strerror(errno));
         return nullptr;
     }
-    const size_t length = lengthF /*+ 1*/;
-    char *bufferRead = new char[length];
-    memset(bufferRead, '\0', length);
-    read(fd, bufferRead, lengthF);
-    LOGD("[read]: raw content read, length: %ld", strlen(bufferRead));
-    return bufferRead;
-//    return base64_decode(bufferRead);
-//    return "stub redding";
+    if(lengthF <=0) return nullptr;
+    char *bufferRead = (char *)mmap(NULL,
+            lengthF,
+            PROT_READ,
+            MAP_SHARED,
+            fd,
+            0);
+    if(bufferRead == MAP_FAILED) {
+        return nullptr;
+    }
+    close(fd);
+    const int length = lengthF;
+    char temp[length] = {0};
+    memcpy(temp, bufferRead, lengthF);
+    munmap(bufferRead, lengthF);
+    return temp;
 }
 
 void writeFile(const char *filePath, const char *contentSave) {

@@ -14,14 +14,6 @@
         android:layout_height="120dp"/>
 
     <Button
-        android:id="@+id/btn_write"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="write input to file"
-        app:layout_constraintTop_toBottomOf="@+id/et" />
-
-    <Button
         android:id="@+id/btn_read"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -46,5 +38,14 @@
         android:text="write with mmap"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_write" />
+        app:layout_constraintTop_toBottomOf="@+id/et" />
+
+    <Button
+        android:id="@+id/btn_init"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_write_mmap"
+        android:layout_marginTop="10dp"
+        android:text="init"/>
 </androidx.constraintlayout.widget.ConstraintLayout>
