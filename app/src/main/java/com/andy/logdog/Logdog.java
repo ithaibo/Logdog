@@ -15,6 +15,7 @@ import java.nio.channels.FileChannel;
 public class Logdog {
     static String path;
 
+
     private static class H {
         private static final Logdog INSTANCE = new Logdog();
         // Used to load the 'native-lib' library on application startup.
@@ -27,9 +28,7 @@ public class Logdog {
     }
 
     public void init(@NonNull Context context) {
-        File file = new File(context.getApplicationContext()
-                .getExternalFilesDir(null), "logdog");
-        path = file.getAbsolutePath();
+
         native_init(path);
     }
 
@@ -43,6 +42,7 @@ public class Logdog {
     public native void mmap_write(@NonNull String path, @NonNull String content);
     public native String readFile(@NonNull String path);
     public native void printBase64(@NonNull String content);
+    public native void onExit();
 
 
     public void mmapW(@NonNull String path, @NonNull String content) {

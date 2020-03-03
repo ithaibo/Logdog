@@ -7,6 +7,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity {
     EditText editText;
     private TextView tv;
@@ -15,6 +17,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        File file = new File(getApplicationContext()
+                .getExternalFilesDir(null), "logdog");
+        Logdog.path = file.getAbsolutePath();
 
         editText = findViewById(R.id.et);
         tv = findViewById(R.id.tv);
@@ -44,4 +51,9 @@ public class MainActivity extends AppCompatActivity {
         tv.setText(read);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Logdog.getInstance().onExit();
+    }
 }

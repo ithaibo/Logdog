@@ -38,7 +38,7 @@ const char *readFile(char const *filePath) {
              strerror(errno));
         return nullptr;
     }
-    if(lengthF <=0) return nullptr;
+
     char *bufferRead = (char *)mmap(NULL,
             lengthF,
             PROT_READ,
@@ -50,7 +50,7 @@ const char *readFile(char const *filePath) {
     }
     close(fd);
     const int length = lengthF;
-    char temp[length] = {0};
+    char temp[length];
     memcpy(temp, bufferRead, lengthF);
     munmap(bufferRead, lengthF);
     return temp;

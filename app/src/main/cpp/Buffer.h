@@ -37,6 +37,8 @@ public:
      */
     char *get(off_t start, size_t length);
 
+    void onExit();
+
 protected:
     static const int FD_NOT_OPEN = -1;
     /**buffer map file*/
@@ -79,16 +81,6 @@ protected:
      * @return 是否填充成功
      */
     bool zeroFill(off_t start, size_t length);
-};
-
-
-class WriteOnce : Buffer {
-public:
-    static WriteOnce& get_instance(const char* path) {
-        static WriteOnce instance;
-        return instance;
-    }
-    bool append(const char *path, const char *content) override;
 };
 
 #endif //LOGDOG_BUFFER_H

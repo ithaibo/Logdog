@@ -271,62 +271,21 @@ void Buffer::initFile(const char *path) {
     }
 }
 
-bool WriteOnce::append(const char *path, const char *content) {
-    if(nullptr == content)return false;
-
-    //encode content with base64
-    char* toSaveEncode = base64_encode(content);
-    size_t length = strlen(toSaveEncode);
-
-    //obtain file size
-    size_t fileSize = obtainFileSize(path);
-    if(fileSize < 1 * 1024 * 1024) {
-        if(-1 ==ftruncate(fd, 1*1024*1024)) {
-            return false;
-        }
+void Buffer::onExit() {
+    if(fd == FD_NOT_OPEN) return;
+    if(nullptr == bufferInternal || MAP_FAILED == bufferInternal) {
+        close(fd);
+        return;
     }
-
-    if(fileSize <= 0) fileSize = 0;
-    LOGD("[WriteOnce] fileSize: %ld", fileSize);
-
-    //open file
-    openFdForWriting(path);
-    if(FD_NOT_OPEN == fd) {
-        return false;
+    if(0 != msync(bufferInternal, fileSize, MS_SYNC)) {
+        LOGE("sync failed");
+        close(fd);
+        return;
     }
-
-    //resize file
-    if(-1 == lseek(fd, fileSize + length, SEEK_SET)) {
-        LOGE("[WriteOnce] set file size failed");
+    if(-1 == munmap(bufferInternal, fileSize)) {
+        LOGE("unmap failed");
+        close(fd);
+        return;
     }
-    LOGD("[WriteOnce] set file size: %ld", (fileSize + length));
-//    write(fd, "", );
-
-    //map file to memory
-    LOGD("[WriteOnce] content size: %ld", length);
-    bufferInternal = (char*) mmap(
-            NULL,
-            length + fileSize,
-            PROT_READ | PROT_WRITE,
-            MAP_SHARED,
-            fd,
-            0);
-    if(bufferInternal == MAP_FAILED) {
-        return false;
-    }
-    if(fileSize >1) {
-        LOGD("[WriteOnce] buffer content: %s", base64_decode(bufferInternal));
-    }
-
-    //copy data to memory mapped
-    size_t start = fileSize;
-    memcpy(bufferInternal + start, toSaveEncode, length);
-
-    //un map memory
-    if(munmap(bufferInternal, length + fileSize) == -1) {
-        LOGE("[WriteOnce] unmap failed");
-        return false;
-    }
-    LOGD("[WriteOnce] all done");
-    return true;
+    close(fd);
 }

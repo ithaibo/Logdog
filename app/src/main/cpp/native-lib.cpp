@@ -77,3 +77,10 @@ Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring conte
 
     releaseStringUTFChars(env, content, raw);
 }
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_andy_logdog_Logdog_onExit(JNIEnv *env, jobject thiz) {
+    // TODO: implement onExit()
+    if(nullptr == bufferStatic) return;
+
+}
