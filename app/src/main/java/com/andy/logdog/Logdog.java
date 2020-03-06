@@ -26,13 +26,13 @@ public class Logdog {
     }
 
 
-    public void w(String path, String content) {
-        mmapWrite(path, content);
+    public void w(String content) {
+        mmapWrite(content);
         Log.i("Logdog", "write complete");
     }
 
     public native void nativeInit(@NonNull String pathLog);
-    public native void mmapWrite(@NonNull String path, @NonNull String content);
+    public native void mmapWrite(@NonNull String content);
     public native String readFile(@NonNull String path);
     public native void printBase64(@NonNull String content);
     public native void onExit();

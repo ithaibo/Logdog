@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeInputWithMMAP() {
-        Logdog.getInstance().w(Logdog.path, getInput());
+        Logdog.getInstance().w(getInput());
     }
 
     private String getInput() {

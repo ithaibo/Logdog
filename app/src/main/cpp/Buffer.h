@@ -15,20 +15,20 @@ public:
     static Buffer& get_instance(const char* path) {
         static Buffer buffer;
         if(nullptr == buffer.bufferInternal) {
-            buffer.initFile(path);
+            buffer.setFilePath(path);
+            buffer.initFile();
         }
         return buffer;
     }
 
     void setFilePath(const char* path);
-    bool mapMemory(const char *path, size_t size);
 
     virtual /**
      * 追加写入
      * @param content 写入的内容
      * @return 写入的内容在缓冲中的起始位置
      */
-    bool append(const char *path, const char *content);
+    bool append(const char *content);
     /**
      * 从缓存中读取内容
      * @param start 开始位置
@@ -62,9 +62,9 @@ protected:
     void flush(size_t size);
 
 private:
-    void initFile(const char* path);
+    void initFile();
     bool isBufferEnough(size_t size);
-    void openFdForReading(const char* path);
+    void openFdForReading();
 
 protected:
     /**
