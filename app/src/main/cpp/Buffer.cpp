@@ -10,7 +10,7 @@
 #include <cstring>
 #include "Buffer.h"
 #include "alog.h"
-#include "logdog.h"
+#include "FileOption.h"
 #include "base64.h"
 
 
@@ -18,7 +18,8 @@ static const size_t UNIT_SIZE = 4096;
 
 
 bool Buffer::mapMemory(const char *filePath, size_t size) {
-    size_t fileSize = getFileSize(filePath);
+    FileOption *fileOption = new FileOption();
+    size_t fileSize = fileOption->getFileSize(filePath);
     LOGI("[Buffer-mapMemory] file size: %ld", fileSize);
 
     //open file
@@ -238,28 +239,39 @@ void Buffer::initFile(const char *path) {
     LOGD("[Buffer] initFile invoked");
     if(access(path, F_OK) != -1) {
         //get file size
-        fd = open(path, O_RDWR|O_CREAT, S_IRWXU);
-        size_t fileSizeNow = getFileSize(path);
-//        obtainFileSize(path);
+        FileOption *fileOption = new FileOption();
+        size_t fileSizeNow = fileOption->obtainFileSize(path);
         LOGD("[Buffer-initFile] file size: %ld, before create map memory", fileSizeNow);
-        //get content size
         if(fileSizeNow > 0) {
-            openFdForWriting(path);
-            if(lseek(fd, fileSizeNow, SEEK_SET) <0) {
-                return;
+            //ensure
+            size_t sizeMap = UNIT_SIZE * (1 + fileSizeNow/UNIT_SIZE);
+            LOGD("[Buffer-initFile] target file size: %ld", sizeMap);
+            const char* bufferRead = nullptr;
+            if(UNIT_SIZE > fileSizeNow) {
+                bufferRead = fileOption->readFile(path);
+                openFdForWriting(path);
+                if(0 != ftruncate(fd, static_cast<off_t>(sizeMap))) {
+                    LOGE("[Buffer-initFile] extend file size failed, reason: %s", strerror(errno));
+                    _exit(1);
+                }
             }
-            bufferInternal = (char *)mmap(nullptr, fileSizeNow, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+            bufferInternal = (char *)mmap(NULL, sizeMap, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
             if(bufferInternal == MAP_FAILED) {
                 bufferInternal = nullptr;
                 LOGD("[Buffer-initFile] file exists, before create map memory", fileSizeNow);
                 return;
             }
             if(nullptr != bufferInternal) {
-                fileSize = fileSizeNow;
-                //fixme SIGBUS
-                actualSize = strlen(bufferInternal) * sizeof(char);
+                fileSize = sizeMap;
+                actualSize = fileSizeNow;
                 LOGD("[Buffer-initFile] file size: %ld, actualSize: %d", fileSize, actualSize);
             }
+            LOGD("[Buffer-initFile] write back content...");
+            for (int i = 0; i <actualSize && nullptr != bufferRead; ++i) {
+                bufferInternal[i] = bufferRead[i];
+            }
+            fileOption->freeTempBuffer();
+            LOGD("[Buffer-initFile] writing done");
         } else {
             fileSize = 0;
             openFdForWriting(path);
@@ -286,6 +298,16 @@ void Buffer::onExit() {
         LOGE("unmap failed");
         close(fd);
         return;
+    }
+
+    if(actualSize < fileSize) {
+        //truncate fileSize
+        LOGI("shrink file to: %ld", actualSize);
+        if(0 != ftruncate(fd, static_cast<off_t>(actualSize))) {
+            LOGE("shrink file failed");
+        } else {
+            LOGI("shrink file success, now file size: %ld", actualSize);
+        }
     }
     close(fd);
 }

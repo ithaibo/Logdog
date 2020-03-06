@@ -10,22 +10,12 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <malloc.h>
-#include "logdog.h"
+#include "FileOption.h"
 #include "alog.h"
 #include "base64.h"
 
-#define NUMINTS  (52)
-#define FILESIZE (NUMINTS * sizeof(char))
-#define    FILE_MODE    (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
 
-static size_t length = 0;
-static size_t off = 0;
-
-static char *logBuffer = nullptr;
-
-
-
-const char *readFile(char const *filePath) {
+const char *FileOption::readFile(char const *filePath) {
     const size_t lengthF = obtainFileSize(filePath);
     LOGD("[mmap]: file size: %ld", lengthF);
     if (0 >= lengthF) {
@@ -49,26 +39,20 @@ const char *readFile(char const *filePath) {
         return nullptr;
     }
     close(fd);
-    const int length = lengthF;
-    char temp[length];
-    memcpy(temp, bufferRead, lengthF);
+    if(nullptr != temp) {
+        freeTempBuffer();
+    }
+    temp = (char *)malloc(lengthF+1);
+    for (int i = 0; i < lengthF; ++i) {
+        temp[i] = bufferRead[i];
+    }
+    temp[lengthF] = 0;
     munmap(bufferRead, lengthF);
     return temp;
 }
 
-void writeFile(const char *filePath, const char *contentSave) {
-    std::fstream fout;
-    fout.open(filePath, std::ios::out/* | std::ios::app*/);
-    if (!fout.is_open()) {
-        LOGE("open file, %s failed", filePath);
-    } else {
-        fout.write(/*base64_encode(*/contentSave/*)*/, strlen(contentSave));
-        fout.close();
-    }
-}
 
-
-size_t getFileSize(const char *filePath) {
+size_t FileOption::getFileSize(const char *filePath) {
     if (nullptr == filePath) {
         return 0;
     }
@@ -82,10 +66,18 @@ size_t getFileSize(const char *filePath) {
     return static_cast<size_t>(lengthF);
 }
 
-size_t obtainFileSize(const char *path) {
+
+size_t FileOption::obtainFileSize(const char *path) {
     struct stat buff;
     if(stat(path, &buff) < 0) {
         return 0;
     }
     return static_cast<size_t>(buff.st_size);
+}
+
+void FileOption::freeTempBuffer() {
+    if(nullptr != temp) {
+        free(temp);
+        temp = nullptr;
+    }
 }

@@ -12,7 +12,7 @@ add_library( # Sets the name of the library.
         SHARED
         # Provides a relative path to your source file(s).
         native-lib.cpp
-        logdog.cpp
+        FileOption.cpp
         base64.h
         base64.cpp
         Buffer.h

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "alog.h"
-#include "logdog.h"
+#include "FileOption.h"
 #include "base64.h"
 #include "Buffer.h"
 
@@ -20,7 +20,7 @@ static Buffer *bufferStatic = nullptr;
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logpath) {
+Java_com_andy_logdog_Logdog_nativeInit(JNIEnv *env, jobject thiz, jstring logpath) {
     const char *path = (*env).GetStringUTFChars(logpath, JNI_FALSE);
 
 //    Buffer::get_instance().mapMemory(path);
@@ -34,7 +34,7 @@ Java_com_andy_logdog_Logdog_native_1init(JNIEnv *env, jobject thiz, jstring logp
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_andy_logdog_Logdog_mmap_1write(JNIEnv *env, jobject thiz, jstring path,
+Java_com_andy_logdog_Logdog_mmapWrite(JNIEnv *env, jobject thiz, jstring path,
                                           jstring content) {
     const char *path_chars = (*env).GetStringUTFChars(path, JNI_FALSE);
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
@@ -61,9 +61,12 @@ extern "C"
 JNIEXPORT jstring JNICALL
 Java_com_andy_logdog_Logdog_readFile(JNIEnv *env, jobject thiz, jstring path) {
     const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
-    const char* contentFromFile = readFile(filePath);
+    FileOption *fileOption = new FileOption();
+    const char* contentFromFile = fileOption->readFile(filePath);
     releaseStringUTFChars(env, path, filePath);
-    return (*env).NewStringUTF(contentFromFile== nullptr? "" : contentFromFile);
+    jstring result = (*env).NewStringUTF(contentFromFile== nullptr? "" : contentFromFile);
+    fileOption->freeTempBuffer();
+    return result;
 }
 
 extern "C"
@@ -80,7 +83,6 @@ Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring conte
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_andy_logdog_Logdog_onExit(JNIEnv *env, jobject thiz) {
-    // TODO: implement onExit()
     if(nullptr == bufferStatic) return;
-
+    bufferStatic->onExit();
 }
