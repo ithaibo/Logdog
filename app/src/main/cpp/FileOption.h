@@ -10,7 +10,7 @@ public:
     /**
      * note: free
      * @param filePath
-     * @return
+     * @return content read from file.
      */
     const char* readFile(char const *filePath);
     size_t getFileSize(const char *filePath);

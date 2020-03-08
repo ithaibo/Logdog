@@ -9,12 +9,15 @@
 #include <cstring>
 #include <sys/mman.h>
 #include <unistd.h>
+#include "alog.h"
 
 class Buffer {
+
 public:
     static Buffer& get_instance(const char* path) {
         static Buffer buffer;
         if(nullptr == buffer.bufferInternal) {
+            LOGD("[Buffer-getInstance] page size: %zu", buffer.BUFFER_UNIT_SIZE);
             buffer.setFilePath(path);
             buffer.initFile();
         }
@@ -41,10 +44,11 @@ public:
 
 protected:
     static const int FD_NOT_OPEN = -1;
+
+    /**size of buffer*/
+    const size_t BUFFER_UNIT_SIZE = (size_t)getpagesize();
     /**buffer map file*/
     char *bufferInternal = nullptr;
-    /**size of buffer*/
-    size_t bufferSize = (size_t)getpagesize();
     /**off index of file*/
     size_t off;
     /**file descriptor: file not open*/

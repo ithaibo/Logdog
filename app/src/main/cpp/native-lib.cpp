@@ -53,10 +53,15 @@ JNIEXPORT jstring JNICALL
 Java_com_andy_logdog_Logdog_readFile(JNIEnv *env, jobject thiz, jstring path) {
     const char* filePath = (*env).GetStringUTFChars(path, JNI_FALSE);
     FileOption *fileOption = new FileOption();
+    //read file content to buffer
     const char* contentFromFile = fileOption->readFile(filePath);
+    //convert date type
     releaseStringUTFChars(env, path, filePath);
     jstring result = (*env).NewStringUTF(contentFromFile== nullptr? "" : contentFromFile);
+    //release memory
     fileOption->freeTempBuffer();
+    delete fileOption;
+
     return result;
 }
 
