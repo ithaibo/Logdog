@@ -262,15 +262,6 @@ void Buffer::onExit() {
         return;
     }
 
-    if(actualSize < fileSize) {
-        //truncate fileSize
-        LOGI("shrink file to: %zu", actualSize);
-        if(0 != ftruncate(fd, static_cast<off_t>(actualSize))) {
-            LOGE("shrink file failed");
-        } else {
-            LOGI("shrink file success, now file size: %zu", actualSize);
-        }
-    }
     bufferInternal = nullptr;
     close(fd);
 }
