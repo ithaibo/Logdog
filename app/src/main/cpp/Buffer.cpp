@@ -21,7 +21,7 @@ bool Buffer::append(const char *content) {
     size_t lengthStr = strlen(content);
     size_t lengthToSave = lengthStr * sizeof(char);
 
-    LOGD("[Buffer-append] invoked, lengthStr: %ld, lengthToSave: %ld", lengthStr, lengthToSave);
+    LOGD("[Buffer-append] invoked, lengthToSave: %u", lengthToSave);
 
     //check fd
     if(FD_NOT_OPEN == fd) {
@@ -32,9 +32,8 @@ bool Buffer::append(const char *content) {
         return false;
     }
 
-    LOGD("[Buffer-append] actualSize: %ld", actualSize);
-    LOGD("[Buffer-append] buffer str leng: %ld", strlen(bufferInternal));
-//    memcpy(bufferInternal + actualSize, content, lengthToSave);
+    LOGD("[Buffer-append] actualSize: %u", actualSize);
+    LOGD("[Buffer-append] buffer str length: %u", strlen(bufferInternal));
     for (int i = 0; i <lengthStr; ++i) {
         bufferInternal[actualSize+i] = content[i];
     }
@@ -44,22 +43,10 @@ bool Buffer::append(const char *content) {
     return true;
 }
 
-void Buffer::flush(size_t size) {
-    if (bufferInternal == nullptr) {
-        return;
-    }
-    int unmapResult = munmap(bufferInternal, size);
-    if (-1 == unmapResult) {
-        LOGE("[unmap] error");
-    }
-    off = 0;
-    bufferInternal = nullptr;
-    LOGD("[Buffer-flush] done!");
-}
-
 char *Buffer::get(off_t start, size_t length) {
     if (off < start) return nullptr;
     if (length <= 0) return nullptr;
+    //fixme memory leak
     char *copyStr = new char[length + 1];
     for (size_t index = 0; index < length; index++) {
         copyStr[index] = bufferInternal[index + start];
@@ -67,10 +54,6 @@ char *Buffer::get(off_t start, size_t length) {
     copyStr[length] = '\0';
 
     return copyStr;
-}
-
-bool Buffer::isBufferEnough(size_t size) {
-    return ((bufferSize - off) >= size);
 }
 
 void Buffer::openFdForWriting(const char *path) {
@@ -83,18 +66,6 @@ void Buffer::openFdForWriting(const char *path) {
         return;
     }
     LOGD("[Buffer-OpenFd] success");
-}
-
-void Buffer::openFdForReading() {
-    if (this->filePath == nullptr) return;
-    fd = open(this->filePath,
-              O_RDONLY,
-              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (fd == FD_NOT_OPEN) {
-        LOGE("[Buffer-OpenFd] open file for reading failed, reason: %s", strerror(errno));
-        return;
-    }
-    LOGE("[Buffer-OpenFd] success");
 }
 
 void Buffer::setFilePath(const char *path) {
@@ -118,19 +89,19 @@ bool Buffer::ensureFileSize(size_t sizeNeed) {
         fileSize += UNIT_SIZE;
     }
     size_t sizeIncreased = (fileSize - sizeOld);
-    LOGD("[Buffer] file extend, need: %ld, size increased: %ld", sizeNeed, sizeIncreased);
+    LOGD("[Buffer] file extend, need: %u, size increased: %u", sizeNeed, sizeIncreased);
     if(sizeIncreased <= 0) {
         return true;
     }
     //set file size
-    if(ftruncate(fd, fileSize) != 0) {
+    if(ftruncate(fd, static_cast<off_t>(fileSize)) != 0) {
         LOGE("[Buffer] extend file size failed");
         return false;
     }
     LOGD("[Buffer] extend file size succeed");
 
     //fill zero
-    if(!zeroFill(sizeOld, fileSize - sizeOld)) {
+    if(!zeroFill(static_cast<off_t>(sizeOld), fileSize - sizeOld)) {
         return false;
     }
     LOGD("[Buffer] fill zero succeed");
@@ -192,7 +163,7 @@ void Buffer::initFile() {
         //读取文件大小
         FileOption *fileOption = new FileOption();
         size_t fileSizeNow = fileOption->obtainFileSize(this->filePath);
-        LOGD("[Buffer-initFile] file size: %ld, before create map memory", fileSizeNow);
+        LOGD("[Buffer-initFile] file size: %u, before create map memory", fileSizeNow);
         if(fileSizeNow > 0) {
             //ensure
             size_t sizeMap = fileSizeNow;
@@ -203,7 +174,7 @@ void Buffer::initFile() {
             for (unsigned int i = 0; i < fileSizeNow; ++i) {
                 if (bufferRead[i] == 0) {
                     actualSize = i;
-                    LOGD("[Buffer-initFile] ensure actual size is: %ld", actualSize);
+                    LOGD("[Buffer-initFile] ensure actual size is: %u", actualSize);
                     break;
                 }
             }
@@ -216,7 +187,7 @@ void Buffer::initFile() {
                 sizeMap = UNIT_SIZE * (1 + fileSizeNow / UNIT_SIZE);
                 needExtendFileSize = true;
             }
-            LOGD("[Buffer-initFile] target file size: %ld", sizeMap);
+            LOGD("[Buffer-initFile] target file size: %u", sizeMap);
             openFdForWriting(this->filePath);
             //扩展文件大小
             if(needExtendFileSize) {
@@ -234,8 +205,8 @@ void Buffer::initFile() {
             }
             if(nullptr != bufferInternal) {
                 fileSize = sizeMap;
-                actualSize = fileSizeNow;
-                LOGD("[Buffer-initFile] file size: %ld, actualSize: %d", fileSize, actualSize);
+//                actualSize = fileSizeNow;
+                LOGD("[Buffer-initFile] file size: %u, actualSize: %u", fileSize, actualSize);
             }
             LOGD("[Buffer-initFile] write back content...");
             //内存拷贝
@@ -275,11 +246,11 @@ void Buffer::onExit() {
 
     if(actualSize < fileSize) {
         //truncate fileSize
-        LOGI("shrink file to: %ld", actualSize);
+        LOGI("shrink file to: %u", actualSize);
         if(0 != ftruncate(fd, static_cast<off_t>(actualSize))) {
             LOGE("shrink file failed");
         } else {
-            LOGI("shrink file success, now file size: %ld", actualSize);
+            LOGI("shrink file success, now file size: %u", actualSize);
         }
     }
     bufferInternal = nullptr;

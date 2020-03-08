@@ -59,12 +59,9 @@ protected:
     size_t actualSize = 0;
 
     void openFdForWriting(const char* path);
-    void flush(size_t size);
 
 private:
     void initFile();
-    bool isBufferEnough(size_t size);
-    void openFdForReading();
 
 protected:
     /**
