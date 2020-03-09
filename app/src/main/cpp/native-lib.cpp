@@ -22,7 +22,15 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_andy_logdog_Logdog_nativeInit(JNIEnv *env, jobject thiz, jstring logpath) {
     const char *path = (*env).GetStringUTFChars(logpath, JNI_FALSE);
-    bufferStatic = &Buffer::get_instance(path);
+    if(nullptr == bufferStatic) {
+        LOGD("create and init buffer...");
+        bufferStatic = &Buffer::get_instance(path);
+    } else if (!bufferStatic->isInit()) {
+        LOGD("buffer was created, init it...");
+        bufferStatic->doInit(path);
+    } else {
+        LOGD("buffer was ready, no need init again.");
+    }
     (*env).ReleaseStringUTFChars(logpath, path);
 }
 
@@ -31,6 +39,11 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_andy_logdog_Logdog_mmapWrite(JNIEnv *env, jobject thiz,
                                           jstring content) {
+    if(nullptr == bufferStatic || !bufferStatic->isInit()) {
+        LOGW("buffer not init");
+        return;
+    }
+
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
     LOGD("[mmap]:content: %s", content_chars);
     LOGD("address of buffer: %d", bufferStatic);

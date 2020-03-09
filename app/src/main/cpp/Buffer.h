@@ -24,6 +24,12 @@ public:
         return buffer;
     }
 
+    bool isInit();
+    inline void doInit(const char* path) {
+        setFilePath(path);
+        initFile();
+    }
+
     void setFilePath(const char* path);
 
     virtual /**
@@ -61,6 +67,8 @@ protected:
 
     /**当前文件写入内容的大小*/
     size_t actualSize = 0;
+
+    bool init;
 
     void openFdForWriting(const char* path);
 

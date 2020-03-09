@@ -158,6 +158,7 @@ bool Buffer::zeroFill(off_t start, size_t length) {
 }
 
 void Buffer::initFile() {
+    if (init) return;
     if(nullptr != bufferInternal) {
         return;
     }
@@ -169,6 +170,7 @@ void Buffer::initFile() {
         fileSize = 0;
         //obtain fd for writing.
         openFdForWriting(this->filePath);
+        init = true;
         return;
     }
 
@@ -180,6 +182,7 @@ void Buffer::initFile() {
         delete fileOption;
         fileSize = 0;
         openFdForWriting(this->filePath);
+        init = true;
         return;
     }
 
@@ -217,6 +220,7 @@ void Buffer::initFile() {
             LOGE("[Buffer-initFile] extend file size failed, reason: %s", strerror(errno));
             fileOption->freeTempBuffer();
             delete fileOption;
+            init = false;
             _exit(1);
         }
     }
@@ -227,6 +231,7 @@ void Buffer::initFile() {
         LOGD("[Buffer-initFile] file exists, before create map memory", fileSizeNow);
         fileOption->freeTempBuffer();
         delete fileOption;
+        init = false;
         return;
     }
     if (nullptr != bufferInternal) {
@@ -242,6 +247,7 @@ void Buffer::initFile() {
     //release memory mapped
     fileOption->freeTempBuffer();
     delete fileOption;
+    init = true;
     LOGD("[Buffer-initFile] writing done");
 }
 
@@ -264,4 +270,8 @@ void Buffer::onExit() {
 
     bufferInternal = nullptr;
     close(fd);
+}
+
+bool Buffer::isInit() {
+    return init;
 }
