@@ -34,6 +34,6 @@ public class Logdog {
     public native void nativeInit(@NonNull String pathLog);
     public native void mmapWrite(@NonNull String content);
     public native String readFile(@NonNull String path);
-    public native void printBase64(@NonNull String content);
+//    public native void printBase64(@NonNull String content);
     public native void onExit();
 }
