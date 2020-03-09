@@ -46,7 +46,6 @@ Java_com_andy_logdog_Logdog_mmapWrite(JNIEnv *env, jobject thiz,
 
     const char *content_chars = (*env).GetStringUTFChars(content, JNI_FALSE);
     LOGD("[mmap]:content: %s", content_chars);
-    LOGD("address of buffer: %d", bufferStatic);
 
     bool resultAppend = bufferStatic->append(content_chars);
     if(resultAppend) {
@@ -83,8 +82,8 @@ JNIEXPORT void JNICALL
 Java_com_andy_logdog_Logdog_printBase64(JNIEnv *env, jobject thiz, jstring content) {
     const char* raw = (*env).GetStringUTFChars(content, JNI_FALSE);
     char* afterBase64 = base64_encode(raw);
-    LOGD("[base64] raw: %s, size: %ld", raw, strlen(raw));
-    LOGD("[base64] afterBase64: %s, size: %ld", afterBase64, strlen(afterBase64));
+    LOGD("[base64] raw: %s, size: %zu", raw, strlen(raw));
+    LOGD("[base64] afterBase64: %s, size: %zu", afterBase64, strlen(afterBase64));
     LOGD("[base64] afterBase64Decode: %s", base64_decode(afterBase64));
 
     releaseStringUTFChars(env, content, raw);
