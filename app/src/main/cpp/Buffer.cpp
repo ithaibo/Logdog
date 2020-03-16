@@ -241,9 +241,7 @@ void Buffer::initFile() {
     LOGD("[Buffer-initFile] write back content...");
 
     //write back data from buffer to file
-    for (int i = 0; i < actualSize && nullptr != bufferRead; ++i) {
-        bufferInternal[i] = bufferRead[i];
-    }
+    memcpy(bufferInternal, bufferRead, actualSize);
     //release memory mapped
     fileOption->freeTempBuffer();
     delete fileOption;
