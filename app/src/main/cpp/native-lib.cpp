@@ -78,18 +78,22 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
     LOGD("[NativeLib-write] all done");
 }
 
+
+//todo refactor 指定读取的buffer
 static jstring readFile(JNIEnv *env,jobject thiz,
         jstring path) {
-    const char *filePath = env->GetStringUTFChars(path, JNI_FALSE);
-    FileOption *fileOption = new FileOption();
+    if(nullptr == bufferStatic) {
+        return nullptr;
+    }
+
     //read file content to buffer
-    const char *contentFromFile = fileOption->readFile(filePath);
+    char* read = bufferStatic->getAll();
+    const char *contentFromFile = read;
     //convert date type
-    releaseStringUTFChars(env, path, filePath);
     jstring result = env->NewStringUTF(contentFromFile == nullptr ? "" : contentFromFile);
     //release memory
-    fileOption->freeTempBuffer();
-    delete fileOption;
+    if(nullptr != read)
+    free((void *) read);
 
     return result;
 }

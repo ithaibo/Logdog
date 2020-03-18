@@ -7,21 +7,8 @@
 
 class FileOption {
 public:
-    /**
-     * note: free
-     * @param filePath
-     * @return content read from file.
-     */
-    const char* readFile(char const *filePath);
     size_t getFileSize(const char *filePath);
+
     size_t obtainFileSize(const char *path);
-    void freeTempBuffer();
-
-private:
-    /**
-     * temp buffer for read file
-     */
-    char *temp = nullptr;
 };
-
 #endif //LOGDOG_FILEOPTION_H

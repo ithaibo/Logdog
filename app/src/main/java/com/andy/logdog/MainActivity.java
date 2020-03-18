@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void writeInputWithMMAP() {
         Logdog.getInstance().w(getInput());
+        editText.setText("");
     }
 
     private String getInput() {

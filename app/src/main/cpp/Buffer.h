@@ -46,6 +46,8 @@ public:
      */
     char *get(off_t start, size_t length);
 
+    char *getAll();
+
     void onExit();
 
 protected:
@@ -70,7 +72,7 @@ protected:
 
     bool init;
 
-    void openFdForWriting(const char* path);
+    int openFdForWriting(const char* path);
 
 private:
     void initFile();

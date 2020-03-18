@@ -8,13 +8,10 @@
 #include <error.h>
 #include <errno.h>
 #include <cstring>
+#include <malloc.h>
 #include "Buffer.h"
 #include "alog.h"
 #include "FileOption.h"
-#include "base64.h"
-
-
-//static const size_t UNIT_SIZE = 4096;
 
 
 bool Buffer::append(const char *content) {
@@ -43,34 +40,38 @@ bool Buffer::append(const char *content) {
     return true;
 }
 
+
+
+//note free memory
 char *Buffer::get(off_t start, size_t length) {
     if (off < start) return nullptr;
     if (length <= 0) return nullptr;
-    //fixme memory leak
-    char *copyStr = new char[length + 1];
-    for (size_t index = 0; index < length; index++) {
-        copyStr[index] = bufferInternal[index + start];
-    }
+    char *copyStr = static_cast<char *>(malloc((length + 1) * sizeof(char)));
+    memcpy(copyStr, bufferInternal, length);
     copyStr[length] = '\0';
-
+    //todo 字符串操作函数重构
     return copyStr;
 }
 
-void Buffer::openFdForWriting(const char *path) {
-    if (path == nullptr) return;
-    fd = open(path,
-              O_RDWR | O_CREAT | O_TRUNC,
-              S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (fd == FD_NOT_OPEN) {
+
+
+int Buffer::openFdForWriting(const char *path) {
+    if (path == nullptr) return -1;
+    int fd = open(path, O_RDWR);
+    if (fd == -1) {
         LOGE("[Buffer-OpenFd] open file for writing failed, reason: %s", strerror(errno));
-        return;
     }
     LOGD("[Buffer-OpenFd] success");
+    return fd;
 }
+
+
 
 void Buffer::setFilePath(const char *path) {
     filePath = path;
 }
+
+
 
 bool Buffer::ensureFileSize(size_t sizeNeed) {
     size_t sizeOld = fileSize;
@@ -128,6 +129,8 @@ bool Buffer::ensureFileSize(size_t sizeNeed) {
     return true;
 }
 
+
+
 bool Buffer::zeroFill(off_t start, size_t length) {
     if(start < 0 || length <= 0) {
         return false;
@@ -157,6 +160,8 @@ bool Buffer::zeroFill(off_t start, size_t length) {
     return true;
 }
 
+
+
 void Buffer::initFile() {
     if (init) return;
     if(nullptr != bufferInternal) {
@@ -165,89 +170,80 @@ void Buffer::initFile() {
 
     LOGD("[Buffer] initFile invoked");
 
-    //if file not exists
+    //if file not exists，create it
     if(access(this->filePath, F_OK) == -1) {
+        LOGD("[Buffer-init] file not exists, create it");
         fileSize = 0;
         //obtain fd for writing.
-        openFdForWriting(this->filePath);
+        int fd = open(filePath, O_CREAT|O_RDWR, 0600);
+        if(fd == -1) {
+            fd = FD_NOT_OPEN;
+            return;
+        }
+        this->fd = fd;
         init = true;
         return;
     }
 
-    //读取文件大小
+    //file exists，get size of it
     FileOption *fileOption = new FileOption();
     size_t fileSizeNow = fileOption->obtainFileSize(this->filePath);
     //file size <0, obtain fd for writing and return.
     if (fileSizeNow <= 0) {
         delete fileOption;
         fileSize = 0;
-        openFdForWriting(this->filePath);
+        int fd = openFdForWriting(this->filePath);
+        if(fd == -1) {
+            this->fd = FD_NOT_OPEN;
+            return;
+        }
+        this->fd = fd;
         init = true;
         return;
     }
 
     LOGD("[Buffer-initFile] file size: %zu, before create map memory", fileSizeNow);
 
-    size_t sizeMap = fileSizeNow;
-    const char *bufferRead = nullptr;
-    //read file to buffer
-    bufferRead = fileOption->readFile(this->filePath);
+    int fd = openFdForWriting(this->filePath);
+    if(fd == -1) {
+        this->fd = FD_NOT_OPEN;
+        LOGE("[Buffer-init] open file failed");
+        return;
+    }
+    this->fd = fd;
 
-    //correct actual size
-    actualSize = fileSizeNow;
-    for (unsigned int i = 0; i < fileSizeNow; ++i) {
-        if (bufferRead[i] == 0) {
-            actualSize = i;
-            LOGD("[Buffer-initFile] ensure actual size is: %zu", actualSize);
-            break;
-        }
-    }
-    bool needExtendFileSize = false;
-    if (actualSize != fileSizeNow) {
-        needExtendFileSize = true;
-    }
-    //Make sure file size is a multiple of page size
-    if ((sizeMap % BUFFER_UNIT_SIZE) != 0) {
-        sizeMap = BUFFER_UNIT_SIZE * (1 + fileSizeNow / BUFFER_UNIT_SIZE);
-        needExtendFileSize = true;
-    }
-    LOGD("[Buffer-initFile] target file size: %zu", sizeMap);
-    openFdForWriting(this->filePath);
-
-    //extend file size
-    if (needExtendFileSize) {
-        if (0 != ftruncate(fd, static_cast<off_t>(sizeMap))) {
-            LOGE("[Buffer-initFile] extend file size failed, reason: %s", strerror(errno));
-            fileOption->freeTempBuffer();
-            delete fileOption;
-            init = false;
-            _exit(1);
-        }
-    }
     //do memory map
-    bufferInternal = (char *) mmap(NULL, sizeMap, PROT_WRITE | PROT_READ, MAP_SHARED, fd, 0);
+    bufferInternal = (char *) mmap(NULL, fileSizeNow, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, 0);
     if (bufferInternal == MAP_FAILED) {
         bufferInternal = nullptr;
-        LOGD("[Buffer-initFile] file exists, before create map memory", fileSizeNow);
-        fileOption->freeTempBuffer();
         delete fileOption;
         init = false;
+        LOGE("[Buffer-init] map file failed, reason: %s", strerror(errno));
         return;
     }
     if (nullptr != bufferInternal) {
-        fileSize = sizeMap;
+        fileSize = fileSizeNow;
         LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
     }
-    LOGD("[Buffer-initFile] write back content...");
 
-    //write back data from buffer to file
-    memcpy(bufferInternal, bufferRead, actualSize);
+    //correct actual size
+    for(size_t i =0; i< fileSizeNow; i++) {
+        if (bufferInternal[i] == 0) {
+            actualSize = i;
+            break;
+        }
+    }
+    char temp[actualSize+1];
+    temp[actualSize] = 0;
+    memcpy(temp, bufferInternal, actualSize);
+    LOGD("[Buffer-initFile] content read from map: %s", temp);
     //release memory mapped
-    fileOption->freeTempBuffer();
     delete fileOption;
     init = true;
     LOGD("[Buffer-initFile] writing done");
 }
+
+
 
 void Buffer::onExit() {
     if(fd == FD_NOT_OPEN) return;
@@ -270,6 +266,14 @@ void Buffer::onExit() {
     close(fd);
 }
 
+
+
 bool Buffer::isInit() {
     return init;
+}
+
+
+
+char *Buffer::getAll() {
+    return get(0, actualSize);
 }
