@@ -36,13 +36,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun readFile() {
-        val read = Logdog.getInstance().readFile(Logdog.path)
+        val read = Logdog.getInstance().read()
         Log.i("Main", "read from file: $read")
         tv.text = read
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Logdog.getInstance().onExit()
+        Logdog.getInstance().release()
     }
 }

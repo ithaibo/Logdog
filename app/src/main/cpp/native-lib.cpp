@@ -10,8 +10,8 @@
 
 using namespace std;
 
-static Buffer *bufferStatic = nullptr;
 static int registerNativeMethods(JNIEnv *env, jclass cls);
+static Buffer *getBuffer(jlong addr);
 
 extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
     JNIEnv *env;
@@ -36,28 +36,27 @@ extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 }
 
 
-static void releaseStringUTFChars(JNIEnv *env, jstring jstr, const char* chars) {
-    if(nullptr == env) return;
-    env->ReleaseStringUTFChars(jstr, chars);
+
+
+/**
+ * 创建Buffer，并返回其地址
+ * @param env
+ * @param obj
+ * @param jpath
+ * @return
+ */
+static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
+    const char *path = env->GetStringUTFChars(jpath, JNI_FALSE);
+    Buffer *buffer = new Buffer();
+    buffer->doInit(path);
+    env->ReleaseStringUTFChars(jpath, path);
+    return (jlong)buffer;
 }
 
-static void nativeInit(JNIEnv *env, jobject obj,
-        jstring logpath) {
-    const char *path = env->GetStringUTFChars(logpath, JNI_FALSE);
-    if(nullptr == bufferStatic) {
-        LOGD("create and init buffer...");
-        bufferStatic = &Buffer::get_instance(path);
-    } else if (!bufferStatic->isInit()) {
-        LOGD("buffer was created, init it...");
-        bufferStatic->doInit(path);
-    } else {
-        LOGD("buffer was ready, no need init again.");
-    }
-    env->ReleaseStringUTFChars(logpath, path);
-}
 
 static void mmapWrite(JNIEnv *env, jobject thiz,
-                      jstring content) {
+                      jlong buffer, jstring content) {
+    Buffer *bufferStatic = getBuffer(buffer);
     if(nullptr == bufferStatic || !bufferStatic->isInit()) {
         LOGW("buffer not init");
         return;
@@ -79,9 +78,18 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
 }
 
 
-//todo refactor 指定读取的buffer
+/**
+ * 从指定的buffer中读取内容
+ * @param env
+ * @param thiz
+ * @param buffer
+ * @param path
+ * @return
+ */
 static jstring readFile(JNIEnv *env,jobject thiz,
-        jstring path) {
+                        jlong buffer) {
+    Buffer *bufferStatic = getBuffer(buffer);
+
     if(nullptr == bufferStatic) {
         return nullptr;
     }
@@ -98,21 +106,27 @@ static jstring readFile(JNIEnv *env,jobject thiz,
     return result;
 }
 
-static void onExit(JNIEnv *env, jobject thiz) {
+static void onExit(JNIEnv *env, jobject thiz, jlong buffer) {
+    Buffer *bufferStatic = getBuffer(buffer);
     if(nullptr == bufferStatic) return;
     bufferStatic->onExit();
+    delete bufferStatic;
 }
 
 
 static JNINativeMethod methods[] = {
-        {"nativeInit", "(Ljava/lang/String;)V", (void *)nativeInit},
-        {"mmapWrite",  "(Ljava/lang/String;)V", (void *)mmapWrite},
-        {"readFile",   "(Ljava/lang/String;)Ljava/lang/String;", (void *)readFile},
-        {"onExit",     "()V", (void *)onExit}
+        {"createBuffer", "(Ljava/lang/String;)J", (void *)createBuffer},
+        {"mmapWrite",  "(JLjava/lang/String;)V", (void *)mmapWrite},
+        {"readFile",   "(J)Ljava/lang/String;", (void *)readFile},
+        {"onExit",     "(J)V", (void *)onExit}
 };
 
 static int registerNativeMethods(JNIEnv *env, jclass cls) {
     return env->RegisterNatives(cls,
             methods,
             sizeof(methods) / sizeof(methods[0]));
+}
+
+static Buffer *getBuffer(jlong addr) {
+    return (Buffer *)addr;
 }
