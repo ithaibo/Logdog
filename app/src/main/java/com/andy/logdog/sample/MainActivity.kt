@@ -1,8 +1,10 @@
-package com.andy.logdog
+package com.andy.logdog.sample
 
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import com.andy.logdog.Logdog
+import com.andy.logdog.R
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {

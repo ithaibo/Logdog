@@ -1,13 +1,14 @@
-package com.andy.logdog
+package com.andy.logdog.sample
 
 import android.app.Application
 import android.content.Context
+import com.andy.logdog.Logdog
 import java.io.File
 
 class MyApp : Application() {
     companion object {
-        private var app:MyApp? = null
-        fun getApp() :MyApp? {
+        private var app: MyApp? = null
+        fun getApp() : MyApp? {
             return app
         }
     }
