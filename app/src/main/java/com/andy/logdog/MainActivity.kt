@@ -9,7 +9,7 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Logdog.getInstance().w("MainActivity.onCreate invoked")
+        Logdog.getInstance().i("MainActivity.onCreate invoked")
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -36,31 +36,31 @@ class MainActivity : AppCompatActivity() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        Logdog.getInstance().w("MainActivity.onAttachedToWindow invoked")
+        Logdog.getInstance().d("MainActivity.onAttachedToWindow invoked")
     }
 
     override fun onStart() {
         super.onStart()
-        Logdog.getInstance().w("MainActivity.onStart invoked")
+        Logdog.getInstance().d("MainActivity.onStart invoked")
     }
 
     override fun onResume() {
         super.onResume()
-        Logdog.getInstance().w("MainActivity.onResume invoked")
+        Logdog.getInstance().d("MainActivity.onResume invoked")
     }
 
     override fun onPause() {
         super.onPause()
-        Logdog.getInstance().w("MainActivity.onPause invoked")
+        Logdog.getInstance().d("MainActivity.onPause invoked")
     }
 
     override fun onStop() {
         super.onStop()
-        Logdog.getInstance().w("MainActivity.onStop invoked")
+        Logdog.getInstance().d("MainActivity.onStop invoked")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Logdog.getInstance().w("MainActivity.onDestroy invoked")
+        Logdog.getInstance().i("MainActivity.onDestroy invoked")
     }
 }

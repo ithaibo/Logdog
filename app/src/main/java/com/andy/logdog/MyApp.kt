@@ -20,7 +20,7 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-//        initLogdog()
+        Logdog.getInstance().i("App is create")
     }
 
 
