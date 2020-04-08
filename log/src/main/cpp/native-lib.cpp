@@ -8,7 +8,6 @@
 #include "base64.h"
 #include "Buffer.h"
 #include <unistd.h>
-#include <threads.h>
 
 using namespace std;
 

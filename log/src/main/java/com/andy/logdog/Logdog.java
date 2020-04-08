@@ -15,10 +15,10 @@ import org.jetbrains.annotations.NotNull;
  todo 读取其他类型的数据
  */
 public class Logdog {
-    public native void mmapWrite(long buffer, @NonNull String content);
+
     private long buffer = -1;
     static {
-        System.loadLibrary("native-lib");
+        System.loadLibrary("logdog");
     }
     private static class H {
         private static final Logdog INSTANCE = new Logdog();
@@ -109,7 +109,7 @@ public class Logdog {
         buffer = -1;
     }
 
-
+    public native void mmapWrite(long buffer, @NonNull String content);
     public native long createBuffer(@NonNull String path);
     public native String readFile(long buffer);
     public native void onExit(long buffer);

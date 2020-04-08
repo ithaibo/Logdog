@@ -5,7 +5,10 @@
 #ifndef LOGDOG_BASE64_H
 #define LOGDOG_BASE64_H
 
-char *base64_encode(const char *str);
-char *base64_decode(const char *code);
+class Base64 {
+public:
+    static char* encode(const char *raw);
+    static char* decode(const char *code);
+};
 
 #endif //LOGDOG_BASE64_H
