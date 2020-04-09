@@ -3,8 +3,8 @@ package com.andy.logdog.sample
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.andy.logdog.Logdog
 import com.andy.logdog.R
+import com.andy.mmap.Mmap
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -26,12 +26,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun writeInputWithMMAP() {
-        Logdog.getInstance().w(getEditInput())
+        Mmap.getInstance().save(getEditInput())
         et.setText("")
     }
 
     private fun readFile() {
-        val read = Logdog.getInstance().read()
+        val read = Mmap.getInstance().read()
         Log.i("Main", "read from file: $read")
         tv.text = read
     }

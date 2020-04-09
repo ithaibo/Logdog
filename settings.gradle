@@ -1,2 +1,3 @@
 include ':app', ':log'
 rootProject.name='Logdog'
+include ':mmap'

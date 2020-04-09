@@ -20,7 +20,7 @@ extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
         return -1;
     }
 
-    static const char *clsName = "com/andy/logdog/Logdog";
+    static const char *clsName = "com/andy/mmap/Mmap";
     jclass instance = env->FindClass(clsName);
     if(!instance) {
         LOGE("fail to locate class: %s", clsName);

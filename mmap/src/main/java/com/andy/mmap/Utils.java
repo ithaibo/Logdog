@@ -1,4 +1,4 @@
-package com.andy.logdog;
+package com.andy.mmap;
 
 import android.text.TextUtils;
 

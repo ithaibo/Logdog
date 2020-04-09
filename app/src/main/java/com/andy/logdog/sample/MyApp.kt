@@ -3,6 +3,7 @@ package com.andy.logdog.sample
 import android.app.Application
 import android.content.Context
 import com.andy.logdog.Logdog
+import com.andy.mmap.Mmap
 import java.io.File
 
 class MyApp : Application() {
@@ -21,7 +22,7 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        Logdog.getInstance().i("App is create")
+//        Logdog.getInstance().i("App is create")
     }
 
 
@@ -29,16 +30,15 @@ class MyApp : Application() {
         val file = File(this
                 .getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
-        Logdog.getInstance().init(path)
+        Mmap.getInstance().init(path)
     }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        Logdog.getInstance().w("Memory is not enough")
     }
 
     override fun onTerminate() {
         super.onTerminate()
-        Logdog.getInstance().release()
+        Mmap.getInstance().release()
     }
 }

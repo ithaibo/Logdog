@@ -6,66 +6,75 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.andy.mmap.Mmap;
+import com.andy.mmap.Utils;
+
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Objects;
+
 /**
- *
- todo 多种类型数据如何序列化、反序列化？
- todo 写入其他数据类型
- todo 读取其他类型的数据
+ * todo 多种类型数据如何序列化、反序列化？
+ * todo 写入其他数据类型
+ * todo 读取其他类型的数据
  */
 public class Logdog {
 
-    private long buffer = -1;
-    static {
-        System.loadLibrary("logdog");
-    }
     private static class H {
         private static final Logdog INSTANCE = new Logdog();
     }
+
     public static Logdog getInstance() {
         return H.INSTANCE;
     }
 
+    private Mmap mmap;
     private String path;
+
     public void init(@NonNull String path) {
         if (!TextUtils.equals(path, this.path)) {
             this.path = path;
         } else {
-            if (-1 != buffer) {
+            if (null != mmap) {
                 Log.w("Logdog", "buffer not need init again!");
                 return;
             }
         }
-        buffer = createBuffer(this.path);
+        mmap = Mmap.getInstance();
+        mmap.init(path);
     }
+
     public void d(String pattern, Object... params) {
         writeLog(LogLevel.DEBUG, pattern, params);
     }
+
     public void i(String pattern, Object... params) {
         writeLog(LogLevel.INFO, pattern, params);
     }
+
     public void w(String pattern, Object... params) {
         writeLog(LogLevel.WARN, pattern, params);
     }
+
     public void e(String pattern, Object... params) {
         writeLog(LogLevel.ERROR, pattern, params);
     }
+
     private void writeLog(LogLevel logLevel, String pattern, Object... params) {
         if (null == logLevel) return;
         String content = Utils.formatStr(pattern, params);
         if (TextUtils.isEmpty(content)) return;
         writeLog(builderLogContent(logLevel.getName(), content));
     }
+
     private void writeLog(String log) {
+        Objects.requireNonNull(mmap, "Mmap == null");
         if (TextUtils.isEmpty(log)) {
+            Log.w("Logdog", "content of log is empty!");
             return;
         }
-        if (buffer == -1) {
-            throw new IllegalStateException("buffer not available, please create it");
-        }
         long start = System.nanoTime();
-        mmapWrite(buffer, log);
+        mmap.save(log);
         long end = System.nanoTime();
 
         Log.i("Logdog", "write complete, time cost: " + (end - start));
@@ -73,6 +82,7 @@ public class Logdog {
 
     /**
      * 格式化需要输出到文件的LOG日志内容。添加时间戳、进程、线程等信息
+     *
      * @param logLevel 日志级别 see as {@link LogLevel}
      * @param content
      * @return
@@ -98,19 +108,12 @@ public class Logdog {
     }
 
     public String read() {
-        if (buffer == -1) {
-            throw new IllegalStateException("buffer not available, please create it");
-        }
-        return readFile(buffer);
-    }
-    public void release() {
-        if (-1 == buffer) return;
-        onExit(buffer);
-        buffer = -1;
+        Objects.requireNonNull(mmap, "Mmap == null");
+        return mmap.read();
     }
 
-    public native void mmapWrite(long buffer, @NonNull String content);
-    public native long createBuffer(@NonNull String path);
-    public native String readFile(long buffer);
-    public native void onExit(long buffer);
+    public void release() {
+        if (null == mmap) return;
+
+    }
 }

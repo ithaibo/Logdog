@@ -43,6 +43,7 @@
 
         <TextView
             android:id="@+id/tv"
+            android:textIsSelectable="true"
             android:hint="show content saved in file"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
