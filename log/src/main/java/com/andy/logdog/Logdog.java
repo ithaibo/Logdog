@@ -44,8 +44,7 @@ public class Logdog {
                 return;
             }
         }
-        mmap = Mmap.getInstance();
-        mmap.init(path);
+        mmap = new Mmap(path);
     }
 
     public void d(String pattern, Object... params) {

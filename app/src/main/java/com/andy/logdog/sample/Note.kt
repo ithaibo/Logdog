@@ -9,6 +9,7 @@ import kotlinx.android.synthetic.main.activity_note.*
 import java.io.File
 
 class Note : AppCompatActivity() {
+    var mmap:Mmap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,8 +33,7 @@ class Note : AppCompatActivity() {
         val file = File(this
                 .getExternalFilesDir(null), "note")
         val path = file.absolutePath
-        //TODO 改单利为工厂
-        Mmap.getInstance().init(path)
+        mmap = Mmap(path)
     }
 
     private fun getEditInput(): String {
@@ -42,12 +42,12 @@ class Note : AppCompatActivity() {
     }
 
     private fun writeInputWithMMAP() {
-        Mmap.getInstance().save(getEditInput())
+        mmap?.save(getEditInput())
         et.setText("")
     }
 
     private fun readFile() {
-        val read = Mmap.getInstance().read()
+        val read = mmap?.read()
         Log.i("Main", "read from file: $read")
         tv.text = read
     }
