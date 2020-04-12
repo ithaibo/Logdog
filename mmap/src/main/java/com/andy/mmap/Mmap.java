@@ -36,7 +36,7 @@ public class Mmap {
         if (TextUtils.isEmpty(content)) return;
         save(builderLogContent(content));
     }
-    public void save(String log) {
+    private void save(String log) {
         if (TextUtils.isEmpty(log)) {
             return;
         }
@@ -57,11 +57,9 @@ public class Mmap {
      */
     @NonNull
     private String builderLogContent(String content) {
-        long timeStamp = System.currentTimeMillis();
 
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder
-                .append(Utils.formatDatetime(timeStamp))
                 .append(content)
                 .append("\n");
         return stringBuilder.toString();

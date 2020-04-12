@@ -31,6 +31,10 @@ public class Logdog {
     private Mmap mmap;
     private String path;
 
+    /**
+     * TODO 重构：这里需要设计创建一个新的Logdog；取消单利模式
+     * @param path
+     */
     public void init(@NonNull String path) {
         if (!TextUtils.equals(path, this.path)) {
             this.path = path;
