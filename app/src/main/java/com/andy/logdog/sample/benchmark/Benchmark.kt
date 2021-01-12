@@ -1,0 +1,78 @@
+package com.andy.logdog.sample.benchmark
+
+import androidx.appcompat.app.AppCompatActivity
+import android.os.Bundle
+import com.andy.logdog.Logdog
+import com.andy.logdog.R
+import kotlinx.android.synthetic.main.activity_benchmark.*
+
+class Benchmark : AppCompatActivity() {
+    private val TIMES = 10000
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_benchmark)
+
+        btn_mmap.setOnClickListener {testMmap()}
+        btn_sync_io.setOnClickListener {testSyncIO()}
+        btn_okio.setOnClickListener {testOKIO()}
+    }
+
+    fun testMmap() {
+        Thread{
+            val result = Result()
+            result.timesWrite = TIMES
+            val start = System.currentTimeMillis()
+            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+            for (i in 0 until  result.timesWrite) {
+                Logdog.getInstance().d(LocalMockLogRepository.apiResponse)
+            }
+            val end = System.currentTimeMillis()
+            result.timeCost = end - start
+            result.contentLength = lengthContent
+            result.writeType = "mmap"
+
+            tv_mmap.post { tv_mmap.text = result.toString() }
+        }.start()
+    }
+
+    fun testSyncIO() {
+        Thread{
+            val result = Result()
+            result.timesWrite = TIMES
+            val start = System.currentTimeMillis()
+            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+
+            for (i in 0 until  result.timesWrite) {
+                SyncLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+            }
+            SyncLogger.getInstance().exit()
+            val end = System.currentTimeMillis()
+            result.timeCost = end - start
+            result.contentLength = lengthContent
+            result.writeType = "SyncIO"
+
+            tv_sync_io.post { tv_sync_io.text = result.toString() }
+        }.start()
+    }
+
+    fun testOKIO() {
+        Thread{
+            val result = Result()
+            result.timesWrite = TIMES
+            val start = System.currentTimeMillis()
+            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+
+            for (i in 0 until  result.timesWrite) {
+                XLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+            }
+            val end = System.currentTimeMillis()
+            result.timeCost = end - start
+            result.contentLength = lengthContent
+            result.writeType = "XLog"
+
+            tv_okio.post { tv_okio.text = result.toString() }
+        }.start()
+    }
+
+}

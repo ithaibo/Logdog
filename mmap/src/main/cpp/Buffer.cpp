@@ -18,7 +18,7 @@ bool Buffer::append(const char *content) {
     size_t lengthStr = strlen(content);
     size_t lengthToSave = lengthStr * sizeof(char);
 
-    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
+//    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
 
     //check fd
     if(FD_NOT_OPEN == fd) {
@@ -29,14 +29,14 @@ bool Buffer::append(const char *content) {
         return false;
     }
 
-    LOGD("[Buffer-append] actualSize: %zu", actualSize);
-    LOGD("[Buffer-append] buffer str length: %zu", strlen(bufferInternal));
+//    LOGD("[Buffer-append] actualSize: %zu", actualSize);
+//    LOGD("[Buffer-append] buffer str length: %zu", strlen(bufferInternal));
     for (int i = 0; i <lengthStr; ++i) {
         bufferInternal[actualSize+i] = content[i];
     }
     actualSize += lengthToSave;
 
-    LOGD("[Buffer-append] success");
+//    LOGD("[Buffer-append] success");
     return true;
 }
 
@@ -90,7 +90,7 @@ bool Buffer::ensureFileSize(size_t sizeNeed) {
         fileSize += BUFFER_UNIT_SIZE;
     }
     size_t sizeIncreased = (fileSize - sizeOld);
-    LOGD("[Buffer] file extend, need: %zu, size increased: %zu", sizeNeed, sizeIncreased);
+//    LOGD("[Buffer] file extend, need: %zu, size increased: %zu", sizeNeed, sizeIncreased);
     if(sizeIncreased <= 0) {
         return true;
     }
@@ -99,13 +99,13 @@ bool Buffer::ensureFileSize(size_t sizeNeed) {
         LOGE("[Buffer] extend file size failed");
         return false;
     }
-    LOGD("[Buffer] extend file size succeed");
+//    LOGD("[Buffer] extend file size succeed");
 
     //fill zero
     if(!zeroFill(static_cast<off_t>(sizeOld), fileSize - sizeOld)) {
         return false;
     }
-    LOGD("[Buffer] fill zero succeed");
+//    LOGD("[Buffer] fill zero succeed");
 
     //unmap memory
     if(nullptr != bufferInternal) {
@@ -124,7 +124,7 @@ bool Buffer::ensureFileSize(size_t sizeNeed) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
     }
-    LOGD("[Buffer] create map memory succeed");
+//    LOGD("[Buffer] create map memory succeed");
 
     return true;
 }

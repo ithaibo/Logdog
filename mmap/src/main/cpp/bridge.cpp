@@ -59,7 +59,7 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
                       jlong buffer, jstring content) {
     int pid = getpid();
     long tid = pthread_self();
-    LOGD("process id: %d, thread id:%ld mmapWrite invoked", pid, tid);
+//    LOGD("process id: %d, thread id:%ld mmapWrite invoked", pid, tid);
     Buffer *bufferStatic = getBuffer(buffer);
     if(nullptr == bufferStatic || !bufferStatic->isInit()) {
         LOGW("buffer not init");
@@ -72,11 +72,11 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
     //todo 是否需要将该结果返回？
     bool resultAppend = bufferStatic->append(content_chars);
     env->ReleaseStringUTFChars(content, content_chars);
-    if(resultAppend) {
-        LOGI("[NativeLib] mmap write success");
-    } else {
-        LOGE("[NativeLib] mmap write fail");
-    }
+//    if(resultAppend) {
+//        LOGI("[NativeLib] mmap write success");
+//    } else {
+//        LOGE("[NativeLib] mmap write fail");
+//    }
 }
 
 

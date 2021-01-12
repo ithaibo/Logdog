@@ -1,9 +1,11 @@
 package com.andy.logdog.sample
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.andy.logdog.R
+import com.andy.logdog.sample.benchmark.Benchmark
 import com.andy.mmap.Mmap
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -18,6 +20,7 @@ class MainActivity : AppCompatActivity() {
         // Example of a call to a native method
         btn_read.setOnClickListener { readFile() }
         btn_write_mmap.setOnClickListener { writeInputWithMMAP() }
+        btn_benchmark.setOnClickListener { startActivity(Intent(this, Benchmark::class.java)) }
     }
 
     private fun getEditInput(): String {

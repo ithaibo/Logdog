@@ -3,8 +3,10 @@ package com.andy.mmap;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
+@Keep
 public class Mmap {
     private long buffer = -1;
     static {
@@ -47,7 +49,7 @@ public class Mmap {
         mmapWrite(buffer, log);
         long end = System.nanoTime();
 
-        Log.i("Logdog", "write complete, time cost: " + (end - start));
+//        Log.i("Logdog", "write complete, time cost: " + (end - start));
     }
 
     /**

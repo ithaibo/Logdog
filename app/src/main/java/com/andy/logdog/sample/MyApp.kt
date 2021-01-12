@@ -3,6 +3,8 @@ package com.andy.logdog.sample
 import android.app.Application
 import android.content.Context
 import com.andy.logdog.Logdog
+import com.andy.logdog.sample.benchmark.SyncLogger
+import com.andy.logdog.sample.benchmark.XLogger
 import com.andy.mmap.Mmap
 import java.io.File
 
@@ -27,10 +29,15 @@ class MyApp : Application() {
 
 
     private fun initLogdog() {
-        val file = File(this
-                .getExternalFilesDir(null), "logdog")
+        val file = File(this.getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
-        Mmap.getInstance().init(path)
+        Logdog.getInstance().init(path)
+
+        val fileSync = File(this.getExternalFilesDir(null), "synclog")
+        val pathSync = fileSync.absolutePath
+        SyncLogger.getInstance().init(pathSync)
+
+        XLogger.getInstance().init(this.getExternalFilesDir(null)?.absolutePath!!)
     }
 
     override fun onTrimMemory(level: Int) {
