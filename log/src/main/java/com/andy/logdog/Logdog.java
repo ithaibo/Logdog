@@ -60,10 +60,10 @@ public class Logdog {
     }
 
     private void writeLog(LogLevel logLevel, String pattern, Object... params) {
-        if (null == logLevel) return;
-        String content = Utils.formatStr(pattern, params);
-        if (TextUtils.isEmpty(content)) return;
-        writeLog(content+"\n");
+//        if (null == logLevel) return;
+//        String content = Utils.formatStr(pattern, params);
+//        if (TextUtils.isEmpty(content)) return;
+        writeLog(pattern);
 //     todo   writeLog(builderLogContent(logLevel.getName(), content));
     }
 

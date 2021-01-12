@@ -36,7 +36,7 @@ public class XLogger implements ILogger {
 
         if (BuildConfig.DEBUG) {
             Log.setConsoleLogOpen(false);
-            Log.appenderOpen(Xlog.LEVEL_DEBUG, Xlog.AppednerModeAsync, cachePath, logPath, "XLOGSAMPLE", 0);
+            Log.appenderOpen(Xlog.LEVEL_DEBUG, Xlog.AppednerModeSync, cachePath, logPath, "XLOGSAMPLE", 0);
         } else {
             Log.setConsoleLogOpen(false);
             Log.appenderOpen(Xlog.LEVEL_INFO, Xlog.AppednerModeAsync, cachePath, logPath, "XLOGSAMPLE", 0);

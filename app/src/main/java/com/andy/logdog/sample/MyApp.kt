@@ -32,12 +32,15 @@ class MyApp : Application() {
         val file = File(this.getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
         Logdog.getInstance().init(path)
+        Logdog.getInstance().d("Logdog start...")
 
         val fileSync = File(this.getExternalFilesDir(null), "synclog")
         val pathSync = fileSync.absolutePath
         SyncLogger.getInstance().init(pathSync)
+        SyncLogger.getInstance().d("Logdog start...")
 
         XLogger.getInstance().init(this.getExternalFilesDir(null)?.absolutePath!!)
+        XLogger.getInstance().d("Logdog start...")
     }
 
     override fun onTrimMemory(level: Int) {
