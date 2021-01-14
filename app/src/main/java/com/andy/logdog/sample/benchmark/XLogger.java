@@ -16,7 +16,6 @@ public class XLogger implements ILogger {
     static {
         System.loadLibrary("c++_shared");
         System.loadLibrary("marsxlog");
-//        System.loadLibrary("native-lib");
     }
 
 

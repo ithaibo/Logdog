@@ -9,34 +9,74 @@
 #include <errno.h>
 #include <cstring>
 #include <malloc.h>
+#include <ctime>
+
+#define LOG_TAG "MappedBuffer"
+
 #include "Buffer.h"
 #include "alog.h"
 #include "FileOption.h"
 
+typedef struct timeval TimeVal;
 
 bool Buffer::append(const char *content) {
+    TimeVal timeStart;
+    gettimeofday(&timeStart, nullptr);
+
     size_t lengthStr = strlen(content);
     size_t lengthToSave = lengthStr * sizeof(char);
+    //当前的buffer中还剩余的空间
+    size_t lengthOff = BUFFER_UNIT_SIZE - actualSize;
 
-//    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
+    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
+    LOGD("[Buffer-append] invoked, lengthOff: %zu", lengthOff);
 
     //check fd
     if(FD_NOT_OPEN == fd) {
         return false;
     }
 
-    if(!ensureFileSize(lengthToSave)) {
-        return false;
+    char *temp = const_cast<char *>(content);
+    char *buffer = bufferInternal + actualSize;
+    int copyTimes = 0;
+    int bufferCreateTimes = 0;
+    size_t saved;
+    while (lengthToSave > 0) {
+        if (lengthOff > 0) {
+            saved = lengthToSave > lengthOff? lengthOff : lengthToSave;
+            LOGD("[Buffer-append] to copy, length:%d, content:%s", saved, temp);
+            memcpy(bufferInternal + actualSize, temp, saved);
+            copyTimes++;
+            temp = temp + saved;
+            actualSize += saved;
+            lengthToSave -= saved;
+            lengthOff -= saved;
+            LOGD("[Buffer-append] after copy, lengthToSave:%zu, lengthOff:%zu", lengthToSave, lengthOff);
+            continue;
+        }
+
+        if (lengthToSave <= 0) {
+            break;
+        }
+        //create new mapped buffer
+        LOGD("[Buffer-append] invoked, extend buffer...");
+        if (!createNewBuffer()) {
+            LOGE("[Buffer-append] invoked, extend buffer failed");
+            return false;
+        }
+        buffer = bufferInternal;
+        bufferCreateTimes++;
+        actualSize = 0;
+        lengthOff = BUFFER_UNIT_SIZE;
+        LOGD("[Buffer-append] invoked, extend buffer done, legnthToSave:%zu, lengthOff;%zu", lengthToSave, lengthOff);
     }
 
-//    LOGD("[Buffer-append] actualSize: %zu", actualSize);
-//    LOGD("[Buffer-append] buffer str length: %zu", strlen(bufferInternal));
-    for (int i = 0; i <lengthStr; ++i) {
-        bufferInternal[actualSize+i] = content[i];
-    }
-    actualSize += lengthToSave;
+    LOGD("[Buffer-append] invoked, all saved done, copyTimes:%d, bufferCreateTimes:%d", copyTimes, bufferCreateTimes);
 
 //    LOGD("[Buffer-append] success");
+    TimeVal timeEnd;
+    gettimeofday(&timeEnd, nullptr);
+    LOGI("[Buffer-append] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
     return true;
 }
 
@@ -72,66 +112,51 @@ void Buffer::setFilePath(const char *path) {
 }
 
 
+/// TODO 该函数需要找出性能瓶颈
+bool Buffer::createNewBuffer() {
+    TimeVal timeStart;
+    TimeVal timeEnd;
+    gettimeofday(&timeStart, nullptr);
 
-bool Buffer::ensureFileSize(size_t sizeNeed) {
     size_t sizeOld = fileSize;
-
-    //如果当前的文件和缓冲区大小满足写入的内容，直接返回
-    if ((sizeOld - actualSize) > sizeNeed) {
-        LOGI("[Buffer] size of file and buffer in memory is enough, no need increase");
-        return true;
-    }
 
     if(fd == FD_NOT_OPEN) {
         return false;
     }
-    //增大文件大小，每次最小增加4K
-    while (fileSize < (actualSize + sizeNeed)) {
-        fileSize += BUFFER_UNIT_SIZE;
+
+    //unmap memory
+    if(nullptr != bufferInternal && munmap(bufferInternal, BUFFER_UNIT_SIZE) != 0) {
+        LOGE("[Buffer] release old buffer failed");
+        return false;
     }
-    size_t sizeIncreased = (fileSize - sizeOld);
-//    LOGD("[Buffer] file extend, need: %zu, size increased: %zu", sizeNeed, sizeIncreased);
-    if(sizeIncreased <= 0) {
-        return true;
-    }
+
+    fileSize += BUFFER_UNIT_SIZE;
     //set file size
     if(ftruncate(fd, static_cast<off_t>(fileSize)) != 0) {
         LOGE("[Buffer] extend file size failed");
         return false;
     }
-//    LOGD("[Buffer] extend file size succeed");
-
     //fill zero
     if(!zeroFill(static_cast<off_t>(sizeOld), fileSize - sizeOld)) {
         return false;
     }
-//    LOGD("[Buffer] fill zero succeed");
 
-    //unmap memory
-    if(nullptr != bufferInternal) {
-        if(munmap(bufferInternal, sizeOld) != 0) {
-            LOGE("[Buffer] release old buffer failed");
-            return false;
-        }
-    }
-    bufferInternal = (char*)mmap(bufferInternal,
-            fileSize,
-            PROT_READ | PROT_WRITE,
-            MAP_SHARED,
-            fd,
-            0);
+    bufferInternal = (char*)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, sizeOld);
     if(bufferInternal == MAP_FAILED) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
     }
-//    LOGD("[Buffer] create map memory succeed");
 
+    gettimeofday(&timeEnd, nullptr);
+    LOGI("[Buffer-createNewBuffer] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
     return true;
 }
 
 
 
 bool Buffer::zeroFill(off_t start, size_t length) {
+    TimeVal timeStart;
+    gettimeofday(&timeStart, nullptr);
     if(start < 0 || length <= 0) {
         return false;
     }
@@ -157,6 +182,9 @@ bool Buffer::zeroFill(off_t start, size_t length) {
             return false;
         }
     }
+    TimeVal timeEnd;
+    gettimeofday(&timeEnd, nullptr);
+    LOGI("[Buffer-zeroFill] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
     return true;
 }
 
@@ -171,76 +199,62 @@ void Buffer::initFile() {
     LOGD("[Buffer] initFile invoked");
 
     //if file not exists，create it
-    if(access(this->filePath, F_OK) == -1) {
-        LOGD("[Buffer-init] file not exists, create it");
-        fileSize = 0;
-        //obtain fd for writing.
-        int fd = open(filePath, O_CREAT|O_RDWR, 0600);
-        if(fd == -1) {
-            fd = FD_NOT_OPEN;
-            return;
-        }
-        this->fd = fd;
-        init = true;
-        return;
-    }
-
     //file exists，get size of it
-    FileOption *fileOption = new FileOption();
-    size_t fileSizeNow = fileOption->obtainFileSize(this->filePath);
-    //file size <0, obtain fd for writing and return.
-    if (fileSizeNow <= 0) {
-        delete fileOption;
-        fileSize = 0;
-        int fd = openFdForWriting(this->filePath);
-        if(fd == -1) {
-            this->fd = FD_NOT_OPEN;
-            return;
-        }
-        this->fd = fd;
-        init = true;
-        return;
-    }
-
-    LOGD("[Buffer-initFile] file size: %zu, before create map memory", fileSizeNow);
-
-    int fd = openFdForWriting(this->filePath);
+    FileOption fileOption;
+    int fd = fileOption.openFdForMMAP(this->filePath);
     if(fd == -1) {
-        this->fd = FD_NOT_OPEN;
-        LOGE("[Buffer-init] open file failed");
         return;
     }
     this->fd = fd;
+    size_t fileSizeNow = fileOption.obtainFileSize(this->filePath);
+
+    //file size <0, obtain fd for writing and return.
+    if (fileSizeNow <= 0) {
+        if(ftruncate(fd, static_cast<off_t>(BUFFER_UNIT_SIZE)) != 0) {
+            return;
+        }
+        fileSize = BUFFER_UNIT_SIZE;
+        actualSize = 0;
+    } else {
+        fileSize = fileSizeNow;
+    }
+
+    LOGD("[Buffer-initFile] file size: %zu, before create map memory", fileSize);
 
     //do memory map
-    bufferInternal = (char *) mmap(NULL, fileSizeNow, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, 0);
+    off_t startOff;
+    if (fileSize <= BUFFER_UNIT_SIZE) {
+        startOff = 0;
+    } else {
+        startOff = fileSize - BUFFER_UNIT_SIZE;
+    }
+    bufferInternal = (char *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
     if (bufferInternal == MAP_FAILED) {
         bufferInternal = nullptr;
-        delete fileOption;
         init = false;
         LOGE("[Buffer-init] map file failed, reason: %s", strerror(errno));
         return;
     }
-    if (nullptr != bufferInternal) {
-        fileSize = fileSizeNow;
-        LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
-    }
-
     //correct actual size
-    for(size_t i =0; i< fileSizeNow; i++) {
-        if (bufferInternal[i] == 0) {
+    for (int i = startOff; i < fileSize; i++) {
+        if (bufferInternal[i] == ((char)0)) {
             actualSize = i;
+            if (startOff >= BUFFER_UNIT_SIZE) {
+                 actualSize = actualSize % BUFFER_UNIT_SIZE;
+            }
+            LOGD("[Buffer-init] correct actualSize: %zu, index:%d", actualSize, i);
             break;
         }
     }
+
+    LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
     char temp[actualSize+1];
-    temp[actualSize] = 0;
+    temp[actualSize] = (char)0;
     memcpy(temp, bufferInternal, actualSize);
     LOGD("[Buffer-initFile] content read from map: %s", temp);
     //release memory mapped
-    delete fileOption;
     init = true;
-    LOGD("[Buffer-initFile] writing done");
+    LOGD("[Buffer-initFile] done");
 }
 
 

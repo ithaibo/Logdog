@@ -54,7 +54,7 @@ protected:
     static const int FD_NOT_OPEN = -1;
 
     /**size of buffer*/
-    const size_t BUFFER_UNIT_SIZE = (size_t)getpagesize();
+    const size_t BUFFER_UNIT_SIZE = 4 * (size_t)getpagesize();
     /**buffer map file*/
     char *bufferInternal = nullptr;
     /**off index of file*/
@@ -83,7 +83,7 @@ protected:
      * @param sizeNeed
      * @return 文件大小扩展是否成功
      */
-    bool ensureFileSize(size_t sizeNeed);
+    bool createNewBuffer();
 
     /**
      * 向新增加的文件中填充0

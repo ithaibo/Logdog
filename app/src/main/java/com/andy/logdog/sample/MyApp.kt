@@ -22,17 +22,11 @@ class MyApp : Application() {
         initLogdog()
     }
 
-    override fun onCreate() {
-        super.onCreate()
-//        Logdog.getInstance().i("App is create")
-    }
-
 
     private fun initLogdog() {
         val file = File(this.getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
         Logdog.getInstance().init(path)
-        Logdog.getInstance().d("Logdog start...")
 
         val fileSync = File(this.getExternalFilesDir(null), "synclog")
         val pathSync = fileSync.absolutePath
