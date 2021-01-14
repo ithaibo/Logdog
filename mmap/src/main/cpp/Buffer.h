@@ -24,6 +24,10 @@ public:
         return buffer;
     }
 
+    Buffer(size_t bufferSize);
+
+    Buffer();
+
     bool isInit();
     inline void doInit(const char* path) {
         setFilePath(path);
@@ -52,9 +56,9 @@ public:
 
 protected:
     static const int FD_NOT_OPEN = -1;
-
+    const size_t DEFAULT_BUFFER_SIZE = 256 * (size_t)getpagesize();
     /**size of buffer*/
-    const size_t BUFFER_UNIT_SIZE = 4 * (size_t)getpagesize();
+    size_t BUFFER_UNIT_SIZE = DEFAULT_BUFFER_SIZE;
     /**buffer map file*/
     char *bufferInternal = nullptr;
     /**off index of file*/
@@ -72,18 +76,16 @@ protected:
 
     bool init;
 
-    int openFdForWriting(const char* path);
-
 private:
     void initFile();
 
 protected:
     /**
-     * 确保文件大小
-     * @param sizeNeed
-     * @return 文件大小扩展是否成功
+     * 创建一块新的映射区域
+     * @param startOff 偏移位置
+     * @return 是否成功
      */
-    bool createNewBuffer();
+    bool createNewBuffer(off_t startOff);
 
     /**
      * 向新增加的文件中填充0

@@ -5,9 +5,9 @@ import android.os.Bundle
 import com.andy.logdog.Logdog
 import com.andy.logdog.R
 import kotlinx.android.synthetic.main.activity_benchmark.*
+import java.math.BigDecimal
 
 class Benchmark : AppCompatActivity() {
-    private val TIMES = 10000
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,7 +21,7 @@ class Benchmark : AppCompatActivity() {
     fun testMmap() {
         Thread{
             val result = Result()
-            result.timesWrite = TIMES
+            result.timesWrite = readTimes()
             val start = System.currentTimeMillis()
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
             for (i in 0 until  result.timesWrite) {
@@ -39,7 +39,7 @@ class Benchmark : AppCompatActivity() {
     fun testSyncIO() {
         Thread{
             val result = Result()
-            result.timesWrite = TIMES
+            result.timesWrite = readTimes()
             val start = System.currentTimeMillis()
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
 
@@ -59,7 +59,7 @@ class Benchmark : AppCompatActivity() {
     fun testOKIO() {
         Thread{
             val result = Result()
-            result.timesWrite = TIMES
+            result.timesWrite = readTimes()
             val start = System.currentTimeMillis()
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
 
@@ -75,4 +75,7 @@ class Benchmark : AppCompatActivity() {
         }.start()
     }
 
+    fun readTimes():Int {
+        return if(et_times.text.isEmpty()) 0 else BigDecimal(et_times.text.toString()).toInt()
+    }
 }
