@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import com.andy.logdog.Logdog
 import com.andy.logdog.sample.benchmark.SyncLogger
-import com.andy.logdog.sample.benchmark.XLogger
 import com.andy.mmap.Mmap
 import java.io.File
 
@@ -33,8 +32,6 @@ class MyApp : Application() {
         SyncLogger.getInstance().init(pathSync)
         SyncLogger.getInstance().d("Logdog start...")
 
-        XLogger.getInstance().init(this.getExternalFilesDir(null)?.absolutePath!!)
-        XLogger.getInstance().d("Logdog start...")
     }
 
     override fun onTrimMemory(level: Int) {

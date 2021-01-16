@@ -57,22 +57,6 @@ class Benchmark : AppCompatActivity() {
     }
 
     fun testOKIO() {
-        Thread{
-            val result = Result()
-            result.timesWrite = readTimes()
-            val start = System.currentTimeMillis()
-            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
-
-            for (i in 0 until  result.timesWrite) {
-                XLogger.getInstance().d(LocalMockLogRepository.apiResponse)
-            }
-            val end = System.currentTimeMillis()
-            result.timeCost = end - start
-            result.contentLength = lengthContent
-            result.writeType = "XLog"
-
-            tv_okio.post { tv_okio.text = result.toString() }
-        }.start()
     }
 
     fun readTimes():Int {
