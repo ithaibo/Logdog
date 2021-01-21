@@ -43,7 +43,7 @@ bool Buffer::append(const char *content) {
     }
 
     char *temp = const_cast<char *>(content);
-    char *buffer = bufferInternal + actualSize;
+    uint8_t *buffer = bufferInternal + actualSize;
     int copyTimes = 0;
     int bufferCreateTimes = 0;
     size_t saved;
@@ -96,10 +96,10 @@ bool Buffer::append(const char *content) {
 char *Buffer::get(off_t start, size_t length) {
     if (off < start) return nullptr;
     if (length <= 0) return nullptr;
-    char *copyStr = static_cast<char *>(malloc((length + 1) * sizeof(char)));
+    auto *copyStr = static_cast<uint8_t *>(malloc((length + 1) * sizeof(uint8_t)));
     memcpy(copyStr, bufferInternal, length);
     copyStr[length] = '\0';
-    return copyStr;
+    return reinterpret_cast<char *>(copyStr);
 }
 
 
@@ -133,7 +133,7 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
     fileSize += BUFFER_UNIT_SIZE;
-    bufferInternal = (char*)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
+    bufferInternal = (uint8_t *)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
     if(bufferInternal == MAP_FAILED) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
@@ -183,7 +183,7 @@ void Buffer::initFile() {
     } else {
         startOff = fileSize - BUFFER_UNIT_SIZE;
     }
-    bufferInternal = (char *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
+    bufferInternal = (uint8_t *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
     if (bufferInternal == MAP_FAILED) {
         bufferInternal = nullptr;
         init = false;

@@ -60,7 +60,7 @@ protected:
     /**size of buffer*/
     size_t BUFFER_UNIT_SIZE = DEFAULT_BUFFER_SIZE;
     /**buffer map file*/
-    char *bufferInternal = nullptr;
+    uint8_t *bufferInternal = nullptr;
     /**off index of file*/
     size_t off;
     /**file descriptor: file not open*/
