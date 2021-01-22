@@ -8,6 +8,7 @@
 #include "base64.h"
 #include "Buffer.h"
 #include <unistd.h>
+#include <zlib.h>
 
 //TODO delete
 #include "log_protocol.h"
@@ -46,11 +47,12 @@ extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 static HbLog *mockLogItem() {
     HbLog *logMock = new HbLog();
 
-    logMock->header = createLogHeader(LogType::E2E, string("10001000100010001000100010001000"), nullptr, 256).get();
 
     LogBody* body = new LogBody();
     body->content = (uint8_t *)"this is a test";
     logMock->body = body;
+    unsigned long crc = crc32(0L, body->content, strlen((const char *)body->content));
+    logMock->header = createLogHeader(LogType::E2E, crc, nullptr, 256).get();
 
     return logMock;
 }
@@ -71,7 +73,7 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
     HbLog *log = mockLogItem();
     LOGD("[mmap] empty log length(byte):%d", sizeof(log));
     LOGD("[mmap] header length:%d", log->header->headerLen);
-    LOGD("[mmap] header CRC32:%s", log->header->crc32);
+    LOGD("[mmap] header CRC32:%ld", log->header->crc32);
     LOGD("[mmap] body length:%d", log->header->bodyLen);
     LOGD("[mmap] body content:%s", log->body->content);
     delete log;

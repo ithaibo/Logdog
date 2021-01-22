@@ -52,7 +52,7 @@ struct HbLog{
 
 std::shared_ptr<LogHeader> createLogHeader(
         uint32_t type,
-        std::string crc32,
+        unsigned long crc32,
         std::string *other,
         uint32_t bodyLen);
 
