@@ -16,6 +16,7 @@
 #include "Buffer.h"
 #include "alog.h"
 #include "FileOption.h"
+#include "compress.h"
 
 //typedef struct timeval TimeVal;
 
@@ -30,6 +31,13 @@ bool Buffer::append(const char *content) {
 //    gettimeofday(&timeStart, nullptr);
 
     size_t lengthStr = strlen(content);
+    std::string result;
+    size_t lengthAfterZip = compress(content, lengthStr, result);
+    LOGD("[Buffer-zip] length before zip:%d, length after zip:%d, compress code:%d", lengthStr, result.length(), lengthAfterZip);
+
+    unsigned long crc = crc32(0L, (const Bytef *)content, lengthStr);
+    LOGD("[mmap] crc:%ld", crc);
+
     size_t lengthToSave = lengthStr * sizeof(char);
     //当前的buffer中还剩余的空间
     size_t lengthOff = BUFFER_UNIT_SIZE - actualSize;

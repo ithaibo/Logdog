@@ -9,6 +9,12 @@
 #include "Buffer.h"
 #include <unistd.h>
 
+//TODO delete
+#include "log_protocol.h"
+#include "config.h"
+#include "utils.h"
+#include "log_type.h"
+
 using namespace std;
 
 static int registerNativeMethods(JNIEnv *env, jclass cls);
@@ -37,6 +43,17 @@ extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 }
 
 
+static HbLog *mockLogItem() {
+    HbLog *logMock = new HbLog();
+
+    logMock->header = createLogHeader(LogType::E2E, string("10001000100010001000100010001000"), nullptr, 256).get();
+
+    LogBody* body = new LogBody();
+    body->content = (uint8_t *)"this is a test";
+    logMock->body = body;
+
+    return logMock;
+}
 
 
 /**
@@ -50,6 +67,15 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, JNI_FALSE);
     Buffer *buffer = new Buffer();
     buffer->doInit(path);
+
+    HbLog *log = mockLogItem();
+    LOGD("[mmap] empty log length(byte):%d", sizeof(log));
+    LOGD("[mmap] header length:%d", log->header->headerLen);
+    LOGD("[mmap] header CRC32:%s", log->header->crc32);
+    LOGD("[mmap] body length:%d", log->header->bodyLen);
+    LOGD("[mmap] body content:%s", log->body->content);
+    delete log;
+
     env->ReleaseStringUTFChars(jpath, path);
     return (jlong)buffer;
 }
