@@ -30,10 +30,6 @@ public class Logdog {
     private Mmap mmap;
     private String path;
 
-    /**
-     * TODO 重构：这里需要设计创建一个新的Logdog；取消单利模式
-     * @param path
-     */
     public void init(@NonNull String path) {
         if (!TextUtils.equals(path, this.path)) {
             this.path = path;
@@ -43,7 +39,8 @@ public class Logdog {
                 return;
             }
         }
-        mmap = new Mmap(path);
+        mmap = Mmap.getInstance();
+        mmap.init(path);
     }
 
     public void d(String pattern, Object... params) {
@@ -108,11 +105,6 @@ public class Logdog {
                 .append(content)
                 .append("\n")
                 .toString();
-    }
-
-    public String read() {
-        Objects.requireNonNull(mmap, "Mmap == null");
-        return mmap.read();
     }
 
     public void release() {
