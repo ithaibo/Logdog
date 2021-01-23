@@ -9,7 +9,6 @@ import androidx.annotation.NonNull;
 import com.andy.mmap.Mmap;
 import com.andy.mmap.Utils;
 
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
@@ -64,10 +63,11 @@ public class Logdog {
     }
 
     private void writeLog(LogLevel logLevel, String pattern, Object... params) {
-        if (null == logLevel) return;
-        String content = Utils.formatStr(pattern, params);
-        if (TextUtils.isEmpty(content)) return;
-        writeLog(builderLogContent(logLevel.getName(), content));
+//        if (null == logLevel) return;
+//        String content = Utils.formatStr(pattern, params);
+//        if (TextUtils.isEmpty(content)) return;
+        writeLog(pattern);
+//     todo   writeLog(builderLogContent(logLevel.getName(), content));
     }
 
     private void writeLog(String log) {
@@ -80,7 +80,7 @@ public class Logdog {
         mmap.save(log);
         long end = System.nanoTime();
 
-        Log.i("Logdog", "write complete, time cost: " + (end - start));
+//        Log.i("Logdog", "write complete, time cost: " + (end - start));
     }
 
     /**
@@ -90,7 +90,8 @@ public class Logdog {
      * @param content
      * @return
      */
-    @NotNull
+    @SuppressWarnings("StringBufferReplaceableByString")
+    @NonNull
     private String builderLogContent(String logLevel, String content) {
         int processId = Process.myPid();
         //线程ID
@@ -98,16 +99,15 @@ public class Logdog {
         long threadIdJava = Thread.currentThread().getId();
         long timeStamp = System.currentTimeMillis();
 
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder
+        return new StringBuilder()
                 .append(Utils.formatStr("[%s]", logLevel))
                 .append(Utils.formatDatetime(timeStamp)).append(" [")
                 .append(processId).append(":")
                 .append(threadTid).append(":")
                 .append(threadIdJava).append("] ")
                 .append(content)
-                .append("\n");
-        return stringBuilder.toString();
+                .append("\n")
+                .toString();
     }
 
     public String read() {

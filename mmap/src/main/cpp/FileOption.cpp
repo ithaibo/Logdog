@@ -39,3 +39,20 @@ size_t FileOption::obtainFileSize(const char *path) {
     }
     return static_cast<size_t>(buff.st_size);
 }
+
+size_t FileOption::getFileSizeByFd(int fd) {
+
+}
+
+bool FileOption::fileExists(const char *filePath) {
+    int fd = open(filePath, O_RDONLY, (mode_t)0600);
+    if(fd > 0) {
+        close(fd);
+        return true;
+    }
+    return false;
+}
+
+int FileOption::openFdForMMAP(const char *path) {
+    return open(path, O_RDWR | O_CREAT, (mode_t)0600);
+}

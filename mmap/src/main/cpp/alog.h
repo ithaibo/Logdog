@@ -7,7 +7,10 @@
 
 #include <android/log.h>
 
+#ifndef LOG_TAG
 #define LOG_TAG "NATIVELOG"
+#endif
+
 #define DEBUG
 #define ANDROID_PLATFORM
 

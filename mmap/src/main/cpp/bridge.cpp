@@ -3,11 +3,13 @@
 #include <android/log.h>
 #include <stdio.h>
 #include <iostream>
+
 #include "alog.h"
 #include "FileOption.h"
 #include "base64.h"
 #include "Buffer.h"
 #include <unistd.h>
+#include "compress/Zip.h"
 
 using namespace std;
 
@@ -59,7 +61,7 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
                       jlong buffer, jstring content) {
     int pid = getpid();
     long tid = pthread_self();
-    LOGD("process id: %d, thread id:%ld mmapWrite invoked", pid, tid);
+//    LOGD("process id: %d, thread id:%ld mmapWrite invoked", pid, tid);
     Buffer *bufferStatic = getBuffer(buffer);
     if(nullptr == bufferStatic || !bufferStatic->isInit()) {
         LOGW("buffer not init");
@@ -68,15 +70,29 @@ static void mmapWrite(JNIEnv *env, jobject thiz,
 
     const char *content_chars = env->GetStringUTFChars(content, JNI_FALSE);
 //    LOGD("[mmap]:content: %s", content_chars);
-
-    //todo 是否需要将该结果返回？
-    bool resultAppend = bufferStatic->append(content_chars);
-    env->ReleaseStringUTFChars(content, content_chars);
-    if(resultAppend) {
-        LOGI("[NativeLib] mmap write success");
-    } else {
-        LOGE("[NativeLib] mmap write fail");
+    int length = strlen(content_chars);
+    LOGD("[mmap] before compress length:%d", length);
+    std::string out;
+    int codeCompress = compress(content_chars, length, out, Z_DEFAULT_COMPRESSION);
+    LOGD("[mmap] out.length():%d, strlen(out.c_str):%d", out.length(), strlen(out.c_str()));
+    std::string raw;
+    int code2 = decompress(out.c_str(), out.length(), raw);
+    if (Z_OK == code2 && codeCompress == Z_OK) {
+        LOGD("[mmap] compare compress and decompress:%d", strcmp(content_chars, raw.c_str()));
     }
+    int lengthAfterCompress = out.length();
+    if (Z_OK == codeCompress) {
+        LOGD("[mmap] after compress, code compress:%d, length:%d", codeCompress, lengthAfterCompress);
+        bool resultAppend = bufferStatic->append(reinterpret_cast<const uint8_t *>(out.c_str()), out.length());
+        if(resultAppend) {
+            LOGI("[NativeLib] mmap write success");
+        } else {
+            LOGE("[NativeLib] mmap write fail");
+        }
+    } else {
+        LOGE("[mmap] compress failed");
+    }
+    env->ReleaseStringUTFChars(content, content_chars);
 }
 
 
@@ -97,13 +113,22 @@ static jstring readFile(JNIEnv *env,jobject thiz,
     }
 
     //read file content to buffer
-    char* read = bufferStatic->getAll();
-    const char *contentFromFile = read;
+    std::string * compressed = bufferStatic->getAll();
+    if (nullptr == compressed) {
+        return nullptr;
+    }
+    std::string decompressResult;
+    if (!compressed->empty()) {
+        LOGD("[mmap] to decompress, length:%d", compressed->length());
+        int codeDecompress = decompress(compressed->c_str(), compressed->length(), decompressResult);
+        int lengthDecompress = decompressResult.length();
+        LOGD("[mmap] after decompress, code:%d, length:%d",codeDecompress, lengthDecompress);
+        LOGD("[mmap] content decompress%s",decompressResult.c_str());
+    }
     //convert date type
-    jstring result = env->NewStringUTF(contentFromFile == nullptr ? "" : contentFromFile);
+    jstring result = env->NewStringUTF(decompressResult.empty() ? "" : decompressResult.c_str());
     //release memory
-    if(nullptr != read)
-    free((void *) read);
+    delete compressed;
 
     return result;
 }

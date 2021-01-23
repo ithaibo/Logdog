@@ -3,19 +3,33 @@ package com.andy.mmap;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
+@Keep
 public class Mmap {
+    private long buffer = -1;
     static {
         System.loadLibrary("mmap-lib");
     }
+    private static class H {
+        private static final Mmap INSTANCE = new Mmap();
+    }
+    public static Mmap getInstance() {
+        return H.INSTANCE;
+    }
 
-    private long pointerBufferMap = -1;
     private String path;
-
-    public Mmap(String path) {
-        this.path = path;
-        init(path);
+    public void init(@NonNull String path) {
+        if (!TextUtils.equals(path, this.path)) {
+            this.path = path;
+        } else {
+            if (-1 != buffer) {
+                Log.w("Logdog", "buffer not need init again!");
+                return;
+            }
+        }
+        buffer = createBuffer(this.path);
     }
 
     public void save(String pattern, Object... params) {
@@ -24,46 +38,18 @@ public class Mmap {
         if (TextUtils.isEmpty(content)) return;
         save(builderLogContent(content));
     }
-    public String read() {
-        if (pointerBufferMap == -1) {
-            throw new IllegalStateException("pointerBufferMap not available, please create it");
+    public void save(String log) {
+        if (TextUtils.isEmpty(log)) {
+            return;
         }
-        return readFile(pointerBufferMap);
-    }
-    public void release() {
-        if (-1 == pointerBufferMap) return;
-        onExit(pointerBufferMap);
-        pointerBufferMap = -1;
-    }
-
-    /**执行内存映射，并返回映射的相关指针（C++ Buffer）*/
-    public native long createBuffer(@NonNull String path);
-    /**写入内容（追加方式）*/
-    public native void mmapWrite(long buffer, @NonNull String content);
-    /**读取整个文件*/
-    public native String readFile(long buffer);
-    /**退出，释放已映射的内存缓冲区*/
-    public native void onExit(long buffer);
-
-
-    //TODO 增加随机访问某一区间的数据功能
-    //TODO 增加指定起始位置，修改指定长度的内容
-
-
-    /**
-     * 创建内存映射
-     * @param path 映射的文件路径
-     */
-    private void init(@NonNull String path) {
-        if (!TextUtils.equals(path, this.path)) {
-            this.path = path;
-        } else {
-            if (-1 != pointerBufferMap) {
-                Log.w("Logdog", "pointerBufferMap not need init again!");
-                return;
-            }
+        if (buffer == -1) {
+            throw new IllegalStateException("buffer not available, please create it");
         }
-        pointerBufferMap = createBuffer(this.path);
+//        long start = System.nanoTime();
+        mmapWrite(buffer, log);
+//        long end = System.nanoTime();
+
+//        Log.i("Logdog", "write complete, time cost: " + (end - start));
     }
 
     /**
@@ -73,20 +59,30 @@ public class Mmap {
      */
     @NonNull
     private String builderLogContent(String content) {
-        return content + "\n";
+        long timeStamp = System.currentTimeMillis();
+
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder
+                .append(Utils.formatDatetime(timeStamp))
+                .append(content)
+                .append("\n");
+        return stringBuilder.toString();
     }
 
-    private void save(String log) {
-        if (TextUtils.isEmpty(log)) {
-            return;
+    public String read() {
+        if (buffer == -1) {
+            throw new IllegalStateException("buffer not available, please create it");
         }
-        if (pointerBufferMap == -1) {
-            throw new IllegalStateException("pointerBufferMap not available, please create it");
-        }
-        long start = System.nanoTime();
-        mmapWrite(pointerBufferMap, log);
-        long end = System.nanoTime();
-
-        Log.i("Logdog", "write complete, time cost: " + (end - start));
+        return readFile(buffer);
     }
+    public void release() {
+        if (-1 == buffer) return;
+        onExit(buffer);
+        buffer = -1;
+    }
+
+    public native void mmapWrite(long buffer, @NonNull String content);
+    public native long createBuffer(@NonNull String path);
+    public native String readFile(long buffer);
+    public native void onExit(long buffer);
 }

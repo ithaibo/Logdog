@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
+    tools:context=".sample.benchmark.Benchmark">
+
+
+    <TextView
+        app:layout_constraintTop_toTopOf="parent"
+        android:id="@+id/tv_mmap"
+        android:hint="to start..."
+        android:minHeight="30dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn_mmap"
+        app:layout_constraintTop_toBottomOf="@id/tv_mmap"
+        android:text="test mmap"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@id/btn_mmap"
+        android:id="@+id/tv_sync_io"
+        android:hint="to start..."
+        android:layout_marginTop="30dp"
+        android:layout_width="match_parent"
+        android:minHeight="30dp"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn_sync_io"
+        app:layout_constraintTop_toBottomOf="@id/tv_sync_io"
+        android:text="test sync io"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@id/btn_sync_io"
+        android:id="@+id/tv_okio"
+        android:hint="to start..."
+        android:layout_marginTop="30dp"
+        android:layout_width="match_parent"
+        android:minHeight="30dp"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btn_okio"
+        app:layout_constraintTop_toBottomOf="@id/tv_okio"
+        android:text="test XLOG"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
+    <EditText
+        android:id="@+id/et_times"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:inputType="number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+</androidx.constraintlayout.widget.ConstraintLayout>
