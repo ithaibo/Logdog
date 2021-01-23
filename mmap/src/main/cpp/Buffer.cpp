@@ -10,6 +10,7 @@
 #include <cstring>
 #include <malloc.h>
 #include <ctime>
+#include <string>
 
 #define LOG_TAG "MappedBuffer"
 
@@ -25,16 +26,14 @@ Buffer::Buffer(size_t bufferSize) {
 
 Buffer::Buffer() {}
 
-bool Buffer::append(const char *content) {
+bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
 //    TimeVal timeStart;
 //    gettimeofday(&timeStart, nullptr);
 
-    size_t lengthStr = strlen(content);
-    size_t lengthToSave = lengthStr * sizeof(char);
     //当前的buffer中还剩余的空间
     size_t lengthOff = BUFFER_UNIT_SIZE - actualSize;
 
-//    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
+    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
 //    LOGD("[Buffer-append] invoked, lengthOff: %zu", lengthOff);
 
     //check fd
@@ -42,8 +41,7 @@ bool Buffer::append(const char *content) {
         return false;
     }
 
-    char *temp = const_cast<char *>(content);
-    char *buffer = bufferInternal + actualSize;
+    const uint8_t *temp = content;
     int copyTimes = 0;
     int bufferCreateTimes = 0;
     size_t saved;
@@ -53,7 +51,7 @@ bool Buffer::append(const char *content) {
 //            LOGD("[Buffer-append] to copy, length:%d, content:%s", saved, temp);
             memcpy(bufferInternal + actualSize, temp, saved);
             copyTimes++;
-            temp = temp + saved;
+            temp += saved;
             actualSize += saved;
             lengthToSave -= saved;
             lengthOff -= saved;
@@ -70,15 +68,14 @@ bool Buffer::append(const char *content) {
             LOGE("[Buffer-append] invoked, extend buffer failed");
             return false;
         }
-        buffer = bufferInternal;
         bufferCreateTimes++;
         actualSize = 0;
         lengthOff = BUFFER_UNIT_SIZE;
 //        LOGD("[Buffer-append] invoked, extend buffer done, legnthToSave:%zu, lengthOff;%zu", lengthToSave, lengthOff);
     }
-    if (lengthOff > 0) {
+    if (actualSize > 0) {
 //        zeroFill(BUFFER_UNIT_SIZE - lengthOff, lengthOff);
-        bufferInternal[BUFFER_UNIT_SIZE - lengthOff] = '\0';
+        bufferInternal[actualSize] = '\0';
     }
 
 //    LOGD("[Buffer-append] invoked, all saved done, copyTimes:%d, bufferCreateTimes:%d", copyTimes, bufferCreateTimes);
@@ -93,13 +90,20 @@ bool Buffer::append(const char *content) {
 
 
 //note free memory
-char *Buffer::get(off_t start, size_t length) {
+std::string * Buffer::get(off_t start, size_t length) {
     if (off < start) return nullptr;
     if (length <= 0) return nullptr;
-    char *copyStr = static_cast<char *>(malloc((length + 1) * sizeof(char)));
-    memcpy(copyStr, bufferInternal, length);
-    copyStr[length] = '\0';
-    return copyStr;
+    const uint8_t *copyStart = bufferInternal + start;
+    const uint8_t *end = copyStart + length;
+    if (end - copyStart >= actualSize) {
+        end = bufferInternal + actualSize;
+    }
+    length = end - copyStart;
+    std::string* result = new std::string();
+    result->append((const char *)copyStart, length);
+    LOGD("result length:%d", result->length());
+
+    return result;
 }
 
 
@@ -133,7 +137,7 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
     fileSize += BUFFER_UNIT_SIZE;
-    bufferInternal = (char*)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
+    bufferInternal = (uint8_t *)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
     if(bufferInternal == MAP_FAILED) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
@@ -147,8 +151,7 @@ bool Buffer::createNewBuffer(off_t startOff) {
 
 
 void Buffer::initFile() {
-    if (init) return;
-    if(nullptr != bufferInternal) {
+    if(init && nullptr != bufferInternal) {
         return;
     }
 
@@ -183,7 +186,7 @@ void Buffer::initFile() {
     } else {
         startOff = fileSize - BUFFER_UNIT_SIZE;
     }
-    bufferInternal = (char *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
+    bufferInternal = (uint8_t *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
     if (bufferInternal == MAP_FAILED) {
         bufferInternal = nullptr;
         init = false;
@@ -191,21 +194,19 @@ void Buffer::initFile() {
         return;
     }
     //correct actual size
-    for (int i = startOff; i < fileSize; i++) {
-        if (bufferInternal[i] == '\0') {
-            actualSize = i;
-            if (startOff >= BUFFER_UNIT_SIZE) {
-                 actualSize = actualSize % BUFFER_UNIT_SIZE;
-            }
+    for (int i = BUFFER_UNIT_SIZE -1 ; i >= 0; i--) {
+        if (bufferInternal[i] != '\0') {
+            actualSize = i+1;
 //            LOGD("[Buffer-init] correct actualSize: %zu, index:%d", actualSize, i);
             break;
         }
+
     }
 
-//    LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
-    char temp[actualSize+1];
-    temp[actualSize] = (char)0;
-    memcpy(temp, bufferInternal, actualSize);
+    LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
+//    if (actualSize < BUFFER_UNIT_SIZE) {
+//        bufferInternal[actualSize] = '\0';
+//    }
 //    LOGD("[Buffer-initFile] content read from map: %s", temp);
     //release memory mapped
     init = true;
@@ -243,6 +244,7 @@ bool Buffer::isInit() {
 
 
 
-char *Buffer::getAll() {
+std::string * Buffer::getAll() {
+    LOGD("length buffer:%d", actualSize);
     return get(0, actualSize);
 }

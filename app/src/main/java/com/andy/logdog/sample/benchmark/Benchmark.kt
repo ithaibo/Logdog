@@ -60,6 +60,6 @@ class Benchmark : AppCompatActivity() {
     }
 
     fun readTimes():Int {
-        return if(et_times.text.isEmpty()) 0 else BigDecimal(et_times.text.toString()).toInt()
+        return if(et_times.text.isEmpty()) 1 else BigDecimal(et_times.text.toString()).toInt()
     }
 }

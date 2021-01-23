@@ -39,18 +39,19 @@ public:
     virtual /**
      * 追加写入
      * @param content 写入的内容
+     * @param lengthToSave 需要保存的字符串长度
      * @return 写入的内容在缓冲中的起始位置
      */
-    bool append(const char *content);
+    bool append(const uint8_t *content, size_t lengthToSave);
     /**
      * 从缓存中读取内容
      * @param start 开始位置
      * @param length 结束位置
      * @return
      */
-    char *get(off_t start, size_t length);
+    std::string * get(off_t start, size_t length);
 
-    char *getAll();
+    std::string * getAll();
 
     void onExit();
 
@@ -60,7 +61,7 @@ protected:
     /**size of buffer*/
     size_t BUFFER_UNIT_SIZE = DEFAULT_BUFFER_SIZE;
     /**buffer map file*/
-    char *bufferInternal = nullptr;
+    uint8_t *bufferInternal = nullptr;
     /**off index of file*/
     size_t off;
     /**file descriptor: file not open*/
