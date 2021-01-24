@@ -8,8 +8,15 @@
 #define LOG_TAG "Zip"
 #include "../alog.h"
 
-int compress(const char *inString, size_t inLength,
+#define ZIP true
+
+int compress(const uint8_t *inString, size_t inLength,
              std::string &out_str, int level) {
+    if (!ZIP) {
+        out_str.append((const char *)inString, inLength);
+        return Z_OK;
+    }
+
     if (!inString) return Z_DATA_ERROR;
 
     int ret;
@@ -22,13 +29,13 @@ int compress(const char *inString, size_t inLength,
     stream.zalloc = nullptr;
     stream.zfree = nullptr;
     stream.opaque = nullptr;
-    ret = deflateInit(&stream, level);
+    ret = deflateInit(&stream, level); //FIXME 有时候莫名其妙的出错
     if (ret != Z_OK) {
         LOGE("[compress] deflateInit error");
         return ret;
     }
 
-    const char* end = inString + inLength;
+    const uint8_t * end = inString + inLength;
 
     size_t distance;
 
@@ -61,8 +68,13 @@ int compress(const char *inString, size_t inLength,
     return Z_OK;
 }
 
-int decompress(const char *str2Decompress, size_t length2Decompress,
+int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
                std::string& outStr) {
+    if (!ZIP) {
+        outStr.append((const char *)str2Decompress, length2Decompress);
+        return Z_OK;
+    }
+
     if (!str2Decompress) return Z_DATA_ERROR;
 
     int ret;
@@ -83,7 +95,7 @@ int decompress(const char *str2Decompress, size_t length2Decompress,
     }
 
     /// address of last char to decompress
-    const char* end = str2Decompress + length2Decompress;
+    const uint8_t * end = str2Decompress + length2Decompress;
 
     size_t distance;
 

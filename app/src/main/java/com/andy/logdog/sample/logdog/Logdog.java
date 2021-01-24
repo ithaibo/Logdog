@@ -1,4 +1,4 @@
-package com.andy.logdog;
+package com.andy.logdog.sample.logdog;
 
 import android.os.Process;
 import android.text.TextUtils;
@@ -6,6 +6,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.andy.log.ILogger;
+import com.andy.log.LogLevel;
 import com.andy.mmap.Mmap;
 import com.andy.mmap.Utils;
 
@@ -17,7 +19,7 @@ import java.util.Objects;
  * todo 写入其他数据类型
  * todo 读取其他类型的数据
  */
-public class Logdog {
+public class Logdog implements ILogger {
 
     private static class H {
         private static final Logdog INSTANCE = new Logdog();
@@ -30,53 +32,60 @@ public class Logdog {
     private Mmap mmap;
     private String path;
 
-    public void init(@NonNull String path) {
+    public boolean init(@NonNull String path) {
         if (!TextUtils.equals(path, this.path)) {
             this.path = path;
         } else {
             if (null != mmap) {
                 Log.w("Logdog", "buffer not need init again!");
-                return;
+                return false;
             }
         }
         mmap = Mmap.getInstance();
         mmap.init(path);
+        return true;
     }
 
-    public void d(String pattern, Object... params) {
-        writeLog(LogLevel.DEBUG, pattern, params);
+    public boolean d(String pattern, Object... params) {
+        return writeLog(LogLevel.DEBUG, pattern, params);
     }
 
-    public void i(String pattern, Object... params) {
+    public boolean i(String pattern, Object... params) {
         writeLog(LogLevel.INFO, pattern, params);
+        return true;
     }
 
-    public void w(String pattern, Object... params) {
+    public boolean w(String pattern, Object... params) {
         writeLog(LogLevel.WARN, pattern, params);
+        return true;
     }
 
-    public void e(String pattern, Object... params) {
+    public boolean e(String pattern, Object... params) {
         writeLog(LogLevel.ERROR, pattern, params);
+        return true;
     }
 
-    private void writeLog(LogLevel logLevel, String pattern, Object... params) {
+    @Override
+    public void exit() {
+        release();
+    }
+
+    private boolean writeLog(LogLevel logLevel, String pattern, Object... params) {
 //        if (null == logLevel) return;
 //        String content = Utils.formatStr(pattern, params);
 //        if (TextUtils.isEmpty(content)) return;
-        writeLog(pattern);
+        return writeLog(pattern);
 //     todo   writeLog(builderLogContent(logLevel.getName(), content));
     }
 
-    private void writeLog(String log) {
+    private boolean writeLog(String log) {
         Objects.requireNonNull(mmap, "Mmap == null");
         if (TextUtils.isEmpty(log)) {
             Log.w("Logdog", "content of log is empty!");
-            return;
+            return false;
         }
-        long start = System.nanoTime();
-        mmap.save(log);
-        long end = System.nanoTime();
-
+        boolean saved = mmap.save(log);
+        return saved;
 //        Log.i("Logdog", "write complete, time cost: " + (end - start));
     }
 
@@ -107,8 +116,8 @@ public class Logdog {
                 .toString();
     }
 
-    public void release() {
+    private void release() {
         if (null == mmap) return;
-
+        mmap = null;
     }
 }

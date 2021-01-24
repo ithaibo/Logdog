@@ -1,4 +1,4 @@
-package com.andy.logdog;
+package com.andy.log;
 
 /**
  * 日志级别

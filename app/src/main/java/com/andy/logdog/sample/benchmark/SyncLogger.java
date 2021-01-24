@@ -2,8 +2,9 @@ package com.andy.logdog.sample.benchmark;
 
 import androidx.annotation.NonNull;
 
+import com.andy.log.ILogger;
+
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -22,24 +23,38 @@ public class SyncLogger implements ILogger {
     private String path;
 
     @Override
-    public void init(@NonNull String path) {
+    public boolean init(@NonNull String path) {
         this.path = path;
-
+        return true;
     }
 
     @Override
-    public void d(String pattern, Object... params) {
+    public boolean d(String pattern, Object... params) {
         writeLog(pattern);
+        return true;
     }
 
     @Override
-    public void i(String pattern, Object... params) {
+    public boolean i(String pattern, Object... params) {
         writeLog(pattern);
+        return true;
     }
 
     @Override
-    public void w(String pattern, Object... params) {
+    public boolean w(String pattern, Object... params) {
         writeLog(pattern);
+        return true;
+    }
+
+    @Override
+    public boolean e(String pattern, Object... params) {
+        writeLog(pattern);
+        return true;
+    }
+
+    @Override
+    public void exit() {
+        if (null == fos) return;
     }
 
     private void writeLog(String pattern) {
@@ -59,15 +74,5 @@ public class SyncLogger implements ILogger {
             }
             fos = null;
         }
-    }
-
-    @Override
-    public void e(String pattern, Object... params) {
-        writeLog(pattern);
-    }
-
-    @Override
-    public void exit() {
-        if (null == fos) return;
     }
 }

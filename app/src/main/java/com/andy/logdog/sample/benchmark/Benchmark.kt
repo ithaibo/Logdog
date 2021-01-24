@@ -2,8 +2,8 @@ package com.andy.logdog.sample.benchmark
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import com.andy.logdog.Logdog
-import com.andy.logdog.R
+import com.andy.logdog.sample.logdog.Logdog
+import com.andy.note.R
 import kotlinx.android.synthetic.main.activity_benchmark.*
 import java.math.BigDecimal
 
@@ -15,7 +15,7 @@ class Benchmark : AppCompatActivity() {
 
         btn_mmap.setOnClickListener {testMmap()}
         btn_sync_io.setOnClickListener {testSyncIO()}
-        btn_okio.setOnClickListener {testOKIO()}
+        btn_xlog.setOnClickListener {testXLog()}
     }
 
     fun testMmap() {
@@ -56,7 +56,22 @@ class Benchmark : AppCompatActivity() {
         }.start()
     }
 
-    fun testOKIO() {
+    fun testXLog() {
+        Thread{
+            val result = Result()
+            result.timesWrite = readTimes()
+            val start = System.currentTimeMillis()
+            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+            for (i in 0 until  result.timesWrite) {
+                XLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+            }
+            val end = System.currentTimeMillis()
+            result.timeCost = end - start
+            result.contentLength = lengthContent
+            result.writeType = "XLog"
+
+            tv_sync_io.post { tv_xlog.text = result.toString() }
+        }.start()
     }
 
     fun readTimes():Int {

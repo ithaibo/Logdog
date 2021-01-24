@@ -33,7 +33,7 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
     //当前的buffer中还剩余的空间
     size_t lengthOff = BUFFER_UNIT_SIZE - actualSize;
 
-    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
+//    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
 //    LOGD("[Buffer-append] invoked, lengthOff: %zu", lengthOff);
 
     //check fd
@@ -104,6 +104,10 @@ std::string * Buffer::get(off_t start, size_t length) {
     LOGD("result length:%d", result->length());
 
     return result;
+// todo   auto *copyStr = static_cast<uint8_t *>(malloc((length + 1) * sizeof(uint8_t)));
+//    memcpy(copyStr, bufferInternal, length);
+//    copyStr[length] = '\0';
+//    return reinterpret_cast<char *>(copyStr);
 }
 
 

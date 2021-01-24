@@ -5,8 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingLeft="15dp"
-    android:paddingRight="15dp"
-    tools:context=".sample.benchmark.Benchmark">
+    android:paddingRight="15dp">
 
 
     <TextView
@@ -44,7 +43,7 @@
 
     <TextView
         app:layout_constraintTop_toBottomOf="@id/btn_sync_io"
-        android:id="@+id/tv_okio"
+        android:id="@+id/tv_xlog"
         android:hint="to start..."
         android:layout_marginTop="30dp"
         android:layout_width="match_parent"
@@ -52,8 +51,8 @@
         android:layout_height="wrap_content"/>
 
     <Button
-        android:id="@+id/btn_okio"
-        app:layout_constraintTop_toBottomOf="@id/tv_okio"
+        android:id="@+id/btn_xlog"
+        app:layout_constraintTop_toBottomOf="@id/tv_xlog"
         android:text="test XLOG"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>

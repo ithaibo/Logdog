@@ -2,8 +2,9 @@ package com.andy.logdog.sample
 
 import android.app.Application
 import android.content.Context
-import com.andy.logdog.Logdog
 import com.andy.logdog.sample.benchmark.SyncLogger
+import com.andy.logdog.sample.benchmark.XLogger
+import com.andy.logdog.sample.logdog.Logdog
 import com.andy.mmap.Mmap
 import java.io.File
 
@@ -19,6 +20,8 @@ class MyApp : Application() {
         super.attachBaseContext(base)
         app = this
         initLogdog()
+
+        initXLog()
     }
 
 
@@ -32,6 +35,10 @@ class MyApp : Application() {
         SyncLogger.getInstance().init(pathSync)
         SyncLogger.getInstance().d("Logdog start...")
 
+    }
+
+    private fun initXLog() {
+        XLogger.getInstance().init(this.getExternalFilesDir(null)?.absolutePath!!)
     }
 
     override fun onTrimMemory(level: Int) {

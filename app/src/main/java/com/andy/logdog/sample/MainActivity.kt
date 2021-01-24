@@ -4,9 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import com.andy.logdog.R
 import com.andy.logdog.sample.benchmark.Benchmark
 import com.andy.mmap.Mmap
+import com.andy.note.R
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {

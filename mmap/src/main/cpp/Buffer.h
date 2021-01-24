@@ -87,14 +87,6 @@ protected:
      * @return 是否成功
      */
     bool createNewBuffer(off_t startOff);
-
-    /**
-     * 向新增加的文件中填充0
-     * @param start 起始位置
-     * @param length 填充的区间大小
-     * @return 是否填充成功
-     */
-    bool zeroFill(off_t start, size_t length);
 };
 
 #endif //LOGDOG_BUFFER_H

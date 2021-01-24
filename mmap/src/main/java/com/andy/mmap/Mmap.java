@@ -4,7 +4,10 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.Keep;
+import androidx.annotation.LongDef;
 import androidx.annotation.NonNull;
+
+import java.math.BigDecimal;
 
 @Keep
 public class Mmap {
@@ -32,24 +35,28 @@ public class Mmap {
         buffer = createBuffer(this.path);
     }
 
-    public void save(String pattern, Object... params) {
-        if (TextUtils.isEmpty(pattern)) return;
+    public boolean save(String pattern, Object... params) {
+        if (TextUtils.isEmpty(pattern)) return false;
         String content = Utils.formatStr(pattern, params);
-        if (TextUtils.isEmpty(content)) return;
-        save(builderLogContent(content));
+        if (TextUtils.isEmpty(content)) return false;
+        return save(builderLogContent(content));
     }
-    public void save(String log) {
+
+    public boolean save(String log) {
         if (TextUtils.isEmpty(log)) {
-            return;
+            return false;
         }
         if (buffer == -1) {
             throw new IllegalStateException("buffer not available, please create it");
         }
 //        long start = System.nanoTime();
-        mmapWrite(buffer, log);
+        boolean success = mmapWrite(buffer, log);
 //        long end = System.nanoTime();
+//        Log.d("Logdog", "time cost invoke jni mmap.mmapWrite" + (end - start)/1000);
 
 //        Log.i("Logdog", "write complete, time cost: " + (end - start));
+
+        return success;
     }
 
     /**
@@ -81,7 +88,7 @@ public class Mmap {
         buffer = -1;
     }
 
-    public native void mmapWrite(long buffer, @NonNull String content);
+    public native boolean mmapWrite(long buffer, @NonNull String content);
     public native long createBuffer(@NonNull String path);
     public native String readFile(long buffer);
     public native void onExit(long buffer);
