@@ -184,7 +184,7 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
 //    unsigned long long start = getTimeUSDNow();
     std::string compressedStr;
     int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
-                                Z_DEFAULT_COMPRESSION);
+                                Z_BEST_COMPRESSION);
 //    unsigned long long endZip = getTimeUSDNow();
 //    LOGI("[bridge] zip time cost:%lld", (endZip - start));
 
@@ -209,9 +209,7 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
     bool resultAppend = bufferStatic->append(toSave, log->logLength);
     delete toSave;
     env->ReleaseStringUTFChars(content, content_chars);
-    if (!resultAppend) {
-        return false;
-    }
+    return resultAppend;
 //    unsigned long long endSave = getTimeUSDNow();
 //    LOGI("[bridge] save cost:%llu", (endSave - endSerialize));
 //    LOGI("[bridge] all time cost:%llu", (endSave - start));
@@ -220,7 +218,6 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
 //    } else {
 //        LOGE("[NativeLib] mmap write fail");
 //    }
-    return true;
 }
 
 
