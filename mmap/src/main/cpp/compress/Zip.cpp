@@ -29,7 +29,7 @@ int compress(const uint8_t *inString, size_t inLength,
     stream.zalloc = nullptr;
     stream.zfree = nullptr;
     stream.opaque = nullptr;
-    ret = deflateInit(&stream, level); //FIXME 有时候莫名其妙的出错
+    ret = deflateInit(&stream, level);
     if (ret != Z_OK) {
         LOGE("[compress] deflateInit error");
         return ret;
@@ -62,10 +62,10 @@ int compress(const uint8_t *inString, size_t inLength,
         if (stream.avail_in != 0) break; /// all input will be used
     } while (flush != Z_FINISH); /// done when last data in file processed
 
-    if (ret != Z_STREAM_END) return Z_STREAM_ERROR;
-
     /// clean up and return
-    return Z_OK;
+    (void)deflateEnd(&stream);
+
+    return (ret == Z_STREAM_END)? Z_OK : Z_STREAM_ERROR;
 }
 
 int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
@@ -82,7 +82,7 @@ int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
     z_stream stream;
     unsigned char out[CHUNK];
 
-    /// allocate infalte state
+    /// allocate inflate state
     stream.zalloc = nullptr;
     stream.zfree = nullptr;
     stream.opaque = nullptr;
@@ -101,7 +101,7 @@ int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
 
     int flush;
 
-    /// decompress until deflate stream ends or end of file
+    /// decompress until deflate stream ends
     do{
         distance = end - str2Decompress;
         stream.avail_in = (distance > CHUNK)? CHUNK : distance;
@@ -120,7 +120,10 @@ int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
             switch (ret) {
                 case Z_NEED_DICT: ret = Z_DATA_ERROR;
                 case Z_DATA_ERROR:
-                case Z_MEM_ERROR: return ret;
+                case Z_MEM_ERROR:
+                    /// clean up and return
+                    (void)inflateEnd(&stream);
+                    return ret;
                 default:;
             }
 
@@ -130,5 +133,7 @@ int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
         /// done when inflate() says it's done
     } while (flush != Z_FINISH);
 
+    /// clean up and return
+    (void)inflateEnd(&stream);
     return ret == Z_STREAM_END? Z_OK : Z_DATA_ERROR;
 }
