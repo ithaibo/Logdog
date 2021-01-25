@@ -5,6 +5,7 @@ public class Result {
     public String writeType;
     public long timeCost;
     public long contentLength;
+    public int successTimes;
 
     @Override
     public String toString() {
@@ -13,6 +14,7 @@ public class Result {
                 ", writeType='" + writeType + '\'' +
                 ", timeCost=" + timeCost +
                 ", contentLength=" + contentLength +
+                ", successTimes=" + successTimes +
                 '}';
     }
 }

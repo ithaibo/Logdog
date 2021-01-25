@@ -36,6 +36,11 @@ struct LogHeader {
     uint8_t *other = nullptr;
     /**body长度(文件)*/
     uint32_t bodyLen;
+
+    LogHeader() {}
+    ~LogHeader() {
+        LOGI("[LogHeader] destroy");
+    }
 };
 
 /**

@@ -25,7 +25,8 @@ class Benchmark : AppCompatActivity() {
             val start = System.currentTimeMillis()
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
             for (i in 0 until  result.timesWrite) {
-                Logdog.getInstance().d(LocalMockLogRepository.apiResponse)
+                val success = Logdog.getInstance().d(LocalMockLogRepository.apiResponse)
+                if (success) result.successTimes++
             }
             val end = System.currentTimeMillis()
             result.timeCost = end - start
@@ -44,7 +45,8 @@ class Benchmark : AppCompatActivity() {
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
 
             for (i in 0 until  result.timesWrite) {
-                SyncLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+                val success =SyncLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+                if (success) result.successTimes++
             }
             SyncLogger.getInstance().exit()
             val end = System.currentTimeMillis()

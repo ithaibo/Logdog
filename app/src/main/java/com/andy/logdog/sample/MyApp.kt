@@ -19,8 +19,9 @@ class MyApp : Application() {
     override fun attachBaseContext(base: Context?) {
         super.attachBaseContext(base)
         app = this
-        initLogdog()
 
+        initLogdog()
+        initSyncLog()
         initXLog()
     }
 
@@ -29,12 +30,13 @@ class MyApp : Application() {
         val file = File(this.getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
         Logdog.getInstance().init(path)
+    }
 
+    private fun initSyncLog() {
         val fileSync = File(this.getExternalFilesDir(null), "synclog")
         val pathSync = fileSync.absolutePath
         SyncLogger.getInstance().init(pathSync)
         SyncLogger.getInstance().d("Logdog start...")
-
     }
 
     private fun initXLog() {
