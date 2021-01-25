@@ -81,41 +81,41 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
  * @param log log
  * @return 字节数组
  */
-static shared_ptr<uint8_t> serialize(const HbLog *log) {
+static uint8_t* serialize(const HbLog *log) {
     if (!log) return nullptr;
     assert(log->header != nullptr);
     assert(log->body != nullptr);
 
-    shared_ptr<uint8_t> temp(new uint8_t[log->logLength]);
+    uint8_t *temp = new uint8_t[log->logLength];
     uint32_t off = 0;
-    memcpy(temp.get() + off, log->header->magic, LEN_HEADER_MAGIC);
+    memcpy(temp + off, log->header->magic, LEN_HEADER_MAGIC);
     off += LEN_HEADER_MAGIC;
-    memcpy(temp.get() + off, &log->header->headerLen, LEN_HEADER_HEADERLEN);
+    memcpy(temp + off, &log->header->headerLen, LEN_HEADER_HEADERLEN);
     off += LEN_HEADER_HEADERLEN;
-    memcpy(temp.get() + off, &log->header->timestamp, LEN_HEADER_TIMESTAMP);
+    memcpy(temp + off, &log->header->timestamp, LEN_HEADER_TIMESTAMP);
     off += LEN_HEADER_TIMESTAMP;
-    memcpy(temp.get() + off, &log->header->version, LEN_HEADER_VERSION);
+    memcpy(temp + off, &log->header->version, LEN_HEADER_VERSION);
     off += LEN_HEADER_VERSION;
-    memcpy(temp.get() + off, log->header->encrypt, LEN_HEADER_ENCRYPT);
+    memcpy(temp + off, log->header->encrypt, LEN_HEADER_ENCRYPT);
     off += LEN_HEADER_ENCRYPT;
-    memcpy(temp.get() + off, log->header->zip, LEN_HEADER_ZIP);
+    memcpy(temp + off, log->header->zip, LEN_HEADER_ZIP);
     off += LEN_HEADER_ZIP;
-    memcpy(temp.get() + off, &log->header->type, LEN_HEADER_TYPE);
+    memcpy(temp + off, &log->header->type, LEN_HEADER_TYPE);
     off += LEN_HEADER_TYPE;
-    memcpy(temp.get() + off, &log->header->crc32, LEN_HEADER_CRC32);
+    memcpy(temp + off, &log->header->crc32, LEN_HEADER_CRC32);
     off += LEN_HEADER_CRC32;
-    memcpy(temp.get() + off, &log->header->otherLen, LEN_HEADER_OTHERLEN);
+    memcpy(temp + off, &log->header->otherLen, LEN_HEADER_OTHERLEN);
     off += LEN_HEADER_OTHERLEN;
     if (nullptr != log->header->other && log->header->otherLen > 0) {
-        memcpy(temp.get() + off, log->header->other, log->header->otherLen);
+        memcpy(temp + off, log->header->other, log->header->otherLen);
         off += log->header->otherLen;
     }
-    memcpy(temp.get() + off, &log->header->bodyLen, LEN_HEADER_BODYLEN);
+    memcpy(temp + off, &log->header->bodyLen, LEN_HEADER_BODYLEN);
     off += LEN_HEADER_BODYLEN;
 
     //body
     if (log->body->content) {
-        memcpy(temp.get() + off, log->body->content, log->header->bodyLen);
+        memcpy(temp + off, log->body->content, log->header->bodyLen);
     }
 
     return temp;
@@ -202,11 +202,12 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
     printLog(log.get());
 
     // 将log的数据写入一个uint_8*中
-    uint8_t *toSave = serialize(log.get()).get();
+    uint8_t *toSave = serialize(log.get());
 //    unsigned long long endSerialize = getTimeUSDNow();
 //    LOGI("[bridge] serialize time cost:%lld", (endSerialize - endCreateLog));
 
     bool resultAppend = bufferStatic->append(toSave, log->logLength);
+    delete toSave;
     env->ReleaseStringUTFChars(content, content_chars);
     if (!resultAppend) {
         return false;
