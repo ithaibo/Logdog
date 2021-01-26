@@ -10,6 +10,7 @@
 #include "config.h"
 #include "utils.h"
 #include "alog.h"
+#include <exception>
 
 #define LOG_PRINT true
 
@@ -75,18 +76,24 @@ inline void printLogHeader(const LogHeader *header) {
     if (!LOG_PRINT) return;
 
     if (!header) return;
-    LOGD("[mmap] log print, header.magic:%s", header->magic);
-    LOGD("[mmap] log print, header.headerLen:%d", header->headerLen);
-    LOGD("[mmap] log print, header.timestamp:%lu", header->timestamp);
-    LOGD("[mmap] log print, header.version:%d", header->version);
-    LOGD("[mmap] log print, header.encrypt:%d", header->encrypt);
-    LOGD("[mmap] log print, header.zip:%d", header->zip);
-    LOGD("[mmap] log print, header.type:%d", header->type);
-    LOGD("[mmap] log print, header.crc32:%lu", header->crc32);
-    LOGD("[mmap] log print, header.otherLen:%d", header->otherLen);
-    if (header->other)
-        LOGD("[mmap] log print, header.other:%s", header->other);
-    LOGD("[mmap] log print, header.bodyLen:%d", header->bodyLen);
+    try {
+        LOGD("[protocol] log print, header.magic:%s", header->magic);
+        LOGD("[protocol] log print, header.headerLen:%d", header->headerLen);
+        LOGD("[protocol] log print, header.timestamp:%lu", header->timestamp);
+        LOGD("[protocol] log print, header.version:%d", header->version);
+        LOGD("[protocol] log print, header.encrypt:%d", header->encrypt);
+        LOGD("[protocol] log print, header.zip:%d", header->zip);
+        LOGD("[protocol] log print, header.type:%d", header->type);
+        LOGD("[protocol] log print, header.crc32:%lu", header->crc32);
+        LOGD("[protocol] log print, header.otherLen:%d", header->otherLen);
+        if (header->other) {
+            LOGD("[protocol] log print, header.other:%s", header->other);
+        }
+        LOGD("[protocol] log print, header.bodyLen:%d", header->bodyLen);
+    } catch(...) {
+        LOGE("[protocol] exception occur during log print");
+    }
+
 }
 
 inline void printLog(const HbLog *log) {
@@ -94,7 +101,11 @@ inline void printLog(const HbLog *log) {
     if (!log) return;
     printLogHeader(log->header);
     if (log->body && log->body->content) {
-        LOGD("[mmap] log print, body.content:%s", log->body->content);
+        LOGD("[protocol] log print, body.content:%s", log->body->content);
+    } else if (!log->body) {
+        LOGD("[protocol] log print, body nullptr");
+    } else {
+        LOGD("[protocol] log print, body->content nullptr");
     }
 }
 
