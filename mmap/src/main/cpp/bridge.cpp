@@ -85,11 +85,11 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
  */
 static uint8_t* serialize(const HbLog *log) {
     if (!log) return nullptr;
+    if (!log->body || !log->body->content) return nullptr;
     assert(log->header != nullptr);
     assert(log->body != nullptr);
 
     uint8_t *temp = new uint8_t[log->logLength];
-    memset((char *)temp, '\0', log->logLength);
     uint32_t off = 0;
     memcpy(temp + off, log->header->magic, LEN_HEADER_MAGIC);
     off += LEN_HEADER_MAGIC;
@@ -244,7 +244,7 @@ static jstring readFile(JNIEnv *env, jobject thiz,
     if (nullptr == bufferStatic) {
         return nullptr;
     }
-    //read file content to buffer
+    //TODO 从只读的Buffer中读取数据,不影响当前的写入流程
     std::shared_ptr<std::string> readFromFile = bufferStatic->getAll();
     if (nullptr == readFromFile) {
         return nullptr;

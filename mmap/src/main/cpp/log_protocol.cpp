@@ -19,7 +19,7 @@ std::shared_ptr<LogHeader> createLogHeader(
     memcpy(header->magic, MAGIC, LEN_HEADER_MAGIC);
 
     //type
-   header->type = type;
+    header->type = type;
 
     //crc32
 //    assert(crc32.length() != 32);
