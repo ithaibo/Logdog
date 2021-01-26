@@ -11,7 +11,7 @@
 #include "utils.h"
 #include "alog.h"
 
-#define LOG_PRINT false
+#define LOG_PRINT true
 
 struct LogHeader {
     /**魔法值*/
@@ -22,11 +22,11 @@ struct LogHeader {
     u_long timestamp = getTimeStamp();
     /**存储软件版本号(整数字符串),对应config中的VERSION*/
     uint32_t version = VERSION;
-    /**加密信息*/
-    char encrypt[32];
-    /**压缩方式 string,默认为zlib*/
-    char zip[32];
-    /**日志类型*/
+    /**加密 1:加密；0：未加密*/
+    uint32_t encrypt;
+    /**压缩(zlib) 1:压缩；0：未压缩*/
+    uint32_t zip;
+    /**日志类型. 对应log_type.h中的LogType*/
     uint32_t type;
     /**body CRC32校验*/
     unsigned long crc32;
@@ -37,7 +37,6 @@ struct LogHeader {
     /**body长度(文件)*/
     uint32_t bodyLen;
 
-    LogHeader() {}
     ~LogHeader() {
         LOGI("[LogHeader] destroy");
     }
@@ -48,6 +47,9 @@ struct LogHeader {
  */
 struct LogBody {
     uint8_t *content = nullptr;
+    ~LogBody() {
+        LOGI("[LogBody] destroy");
+    }
 };
 
 /**
@@ -57,6 +59,10 @@ struct HbLog {
     LogHeader *header = nullptr;
     LogBody *body = nullptr;
     uint32_t logLength;
+
+    ~HbLog(){
+        LOGI("[HbLog] destroy");
+    }
 };
 
 std::shared_ptr<LogHeader> createLogHeader(
@@ -71,12 +77,12 @@ inline void printLogHeader(const LogHeader *header) {
     if (!header) return;
     LOGD("[mmap] log print, header.magic:%s", header->magic);
     LOGD("[mmap] log print, header.headerLen:%d", header->headerLen);
-    LOGD("[mmap] log print, header.timestamp:%ld", header->timestamp);
+    LOGD("[mmap] log print, header.timestamp:%lu", header->timestamp);
     LOGD("[mmap] log print, header.version:%d", header->version);
-    LOGD("[mmap] log print, header.encrypt:%s", header->encrypt);
-    LOGD("[mmap] log print, header.zip:%s", header->zip);
+    LOGD("[mmap] log print, header.encrypt:%d", header->encrypt);
+    LOGD("[mmap] log print, header.zip:%d", header->zip);
     LOGD("[mmap] log print, header.type:%d", header->type);
-    LOGD("[mmap] log print, header.crc32:%ld", header->crc32);
+    LOGD("[mmap] log print, header.crc32:%lu", header->crc32);
     LOGD("[mmap] log print, header.otherLen:%d", header->otherLen);
     if (header->other)
         LOGD("[mmap] log print, header.other:%s", header->other);
@@ -86,20 +92,7 @@ inline void printLogHeader(const LogHeader *header) {
 inline void printLog(const HbLog *log) {
     if (!LOG_PRINT) return;
     if (!log) return;
-    if (log->header) {
-        LOGD("[mmap] log print, header.magic:%s", log->header->magic);
-        LOGD("[mmap] log print, header.headerLen:%d", log->header->headerLen);
-        LOGD("[mmap] log print, header.timestamp:%ld", log->header->timestamp);
-        LOGD("[mmap] log print, header.version:%d", log->header->version);
-        LOGD("[mmap] log print, header.encrypt:%s", log->header->encrypt);
-        LOGD("[mmap] log print, header.zip:%s", log->header->zip);
-        LOGD("[mmap] log print, header.type:%d", log->header->type);
-        LOGD("[mmap] log print, header.crc32:%ld", log->header->crc32);
-        LOGD("[mmap] log print, header.otherLen:%d", log->header->otherLen);
-        if (log->header->other)
-        LOGD("[mmap] log print, header.other:%s", log->header->other);
-        LOGD("[mmap] log print, header.bodyLen:%d", log->header->bodyLen);
-    }
+    printLogHeader(log->header);
     if (log->body && log->body->content) {
         LOGD("[mmap] log print, body.content:%s", log->body->content);
     }

@@ -17,6 +17,7 @@
 #include "config.h"
 #include "utils.h"
 #include "log_type.h"
+#include <vector>
 
 using namespace std;
 
@@ -52,6 +53,7 @@ static shared_ptr<HbLog> createLogItem(uint8_t *logContent, size_t lengthBody) {
     shared_ptr<LogBody> body(new LogBody());
     body->content = logContent;
     logMock->body = body.get();
+    LOGD("[bridge] sizeof(unsigned long):%d", sizeof(unsigned long ));
     unsigned long crc = crc32(0L, body->content, lengthBody);
     logMock->header = createLogHeader(LogType::E2E, crc, nullptr, lengthBody).get();
     logMock->logLength =
@@ -87,6 +89,7 @@ static uint8_t* serialize(const HbLog *log) {
     assert(log->body != nullptr);
 
     uint8_t *temp = new uint8_t[log->logLength];
+    memset((char *)temp, '\0', log->logLength);
     uint32_t off = 0;
     memcpy(temp + off, log->header->magic, LEN_HEADER_MAGIC);
     off += LEN_HEADER_MAGIC;
@@ -96,9 +99,9 @@ static uint8_t* serialize(const HbLog *log) {
     off += LEN_HEADER_TIMESTAMP;
     memcpy(temp + off, &log->header->version, LEN_HEADER_VERSION);
     off += LEN_HEADER_VERSION;
-    memcpy(temp + off, log->header->encrypt, LEN_HEADER_ENCRYPT);
+    memcpy(temp + off, &log->header->encrypt, LEN_HEADER_ENCRYPT);
     off += LEN_HEADER_ENCRYPT;
-    memcpy(temp + off, log->header->zip, LEN_HEADER_ZIP);
+    memcpy(temp + off, &log->header->zip, LEN_HEADER_ZIP);
     off += LEN_HEADER_ZIP;
     memcpy(temp + off, &log->header->type, LEN_HEADER_TYPE);
     off += LEN_HEADER_TYPE;
@@ -133,9 +136,9 @@ shared_ptr<HbLog> deserialize(const uint8_t *toParse) {
     off += LEN_HEADER_TIMESTAMP;
     memcpy(&header->version, toParse + off, LEN_HEADER_VERSION);
     off += LEN_HEADER_VERSION;
-    memcpy(header->encrypt, toParse + off, LEN_HEADER_ENCRYPT);
+    memcpy(&header->encrypt, toParse + off, LEN_HEADER_ENCRYPT);
     off += LEN_HEADER_ENCRYPT;
-    memcpy(header->zip, toParse + off, LEN_HEADER_ZIP);
+    memcpy(&header->zip, toParse + off, LEN_HEADER_ZIP);
     off += LEN_HEADER_ZIP;
     memcpy(&header->type, toParse + off, LEN_HEADER_TYPE);
     off += LEN_HEADER_TYPE;
@@ -153,6 +156,7 @@ shared_ptr<HbLog> deserialize(const uint8_t *toParse) {
 
     shared_ptr<HbLog> parsedLog(new HbLog());
     parsedLog->header = header.get();
+    parsedLog->logLength = header->headerLen + header->bodyLen;
 
     if (header->bodyLen > 0) {
         std::string decompressLogBody;
@@ -162,6 +166,8 @@ shared_ptr<HbLog> deserialize(const uint8_t *toParse) {
             //body
             logBody->content = (uint8_t *) decompressLogBody.c_str();
             parsedLog->body = logBody.get();
+            parsedLog->header->bodyLen = decompressLogBody.length(); //TODO
+            LOGD("[bridge] header->bodyLen:%u, length decompressed:%d, strlen:%d", header->bodyLen, decompressLogBody.length(), strlen(decompressLogBody.c_str()));
         } else {
             LOGE("[mmap] decompress log body failed");
         }
@@ -207,7 +213,7 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
 //    LOGI("[bridge] serialize time cost:%lld", (endSerialize - endCreateLog));
 
     bool resultAppend = bufferStatic->append(toSave, log->logLength);
-    delete toSave;
+    delete []toSave;
     env->ReleaseStringUTFChars(content, content_chars);
     return resultAppend;
 //    unsigned long long endSave = getTimeUSDNow();
@@ -236,16 +242,47 @@ static jstring readFile(JNIEnv *env, jobject thiz,
         return nullptr;
     }
     //read file content to buffer
-    std::string *readFromFile = bufferStatic->getAll();
+    std::shared_ptr<std::string> readFromFile = bufferStatic->getAll();
     if (nullptr == readFromFile) {
         return nullptr;
     }
-    //TODO 这里可能存在多条日志
-    shared_ptr<HbLog> parsedLog = deserialize((uint8_t *) readFromFile->c_str());
-    printLog(parsedLog.get());
-    jstring result = env->NewStringUTF((parsedLog->header->bodyLen <= 0)? "" : (const char *)parsedLog->body->content);
+    // 这里可能存在多条日志
+    auto *off = (uint8_t *) readFromFile->c_str();
+    const size_t length = readFromFile->length();
+    uint8_t *end = off + length;
+    vector<shared_ptr<HbLog>> logParseList;
+    std::string temp;
+    while (off < end) {
+        //pare one log
+        shared_ptr<HbLog> parsedLog = deserialize(off);
+        uint8_t * bodyContent = !parsedLog->body? nullptr : parsedLog->body->content;
+        printLog(parsedLog.get());
+        if(parsedLog->logLength <= 0) {
+            LOGW("[bridge] log length parse <= 0");
+            break;
+        }
+        logParseList.push_back(parsedLog);
+        off += parsedLog->logLength;
+        if(!parsedLog -> body || !bodyContent) {
+            LOGW("[bridge] log body or content of body is empty");
+            continue;
+        }
+        temp.append((const char*)bodyContent);
+        temp.append("\n");
+    }
+    //for(auto & pr : logParseList) {
+    //        if(!pr -> body || !pr->body->content) { continue;}
+    //        temp.append((const char*)pr->body->content);
+    //        temp.append("\n");
+    //    }
+    LOGD("[bridge] total log parsed count:%d", logParseList.size());
+    LOGD("[bridge] all read from file, length:%d, content:%s", temp.length(), temp.c_str());
     //release memory
-    delete readFromFile;
+    logParseList.clear();
+//    shared_ptr<HbLog> parsedLog = deserialize((uint8_t *) readFromFile->c_str());
+//    logParseList.push_back()
+    jstring result = env->NewStringUTF(temp.empty()? "" : temp.c_str());
+    //release memory
     return result;
 }
 

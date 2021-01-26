@@ -19,7 +19,7 @@ class Benchmark : AppCompatActivity() {
     }
 
     fun testMmap() {
-        Thread{
+        val logdogThread = Thread{
             val result = Result()
             result.timesWrite = readTimes()
             val start = System.currentTimeMillis()
@@ -34,7 +34,9 @@ class Benchmark : AppCompatActivity() {
             result.writeType = "mmap"
 
             tv_mmap.post { tv_mmap.text = result.toString() }
-        }.start()
+        }
+        logdogThread.name = "Logdog"
+        logdogThread.start()
     }
 
     fun testSyncIO() {

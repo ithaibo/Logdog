@@ -14,7 +14,7 @@ std::shared_ptr<LogHeader> createLogHeader(
         unsigned long crc32,
         std::string *other,
         uint32_t bodyLen) {
-    LogHeader *header = new LogHeader();
+    std::shared_ptr<LogHeader> header(new LogHeader());
 
     memcpy(header->magic, MAGIC, LEN_HEADER_MAGIC);
 
@@ -32,13 +32,13 @@ std::shared_ptr<LogHeader> createLogHeader(
     header->bodyLen = bodyLen;
 
     //encrypt
-    memcpy(header->encrypt, &"1", 1);
+    header->encrypt = 0; //TODO 补全参数
     //zip
-    memcpy(header->zip, ZLIB, min(strlen(ZLIB), sizeof(header->zip)));
+    header->zip = 1; //TODO 补全参数
     header->otherLen = 0;
 
     //header length
     header->headerLen = calculateHeaderLength();
 
-    return std::shared_ptr<LogHeader>(header);
+    return header;
 }

@@ -9,6 +9,7 @@
 #include <cstring>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <memory>
 #include "alog.h"
 
 class Buffer {
@@ -44,14 +45,19 @@ public:
      */
     bool append(const uint8_t *content, size_t lengthToSave);
     /**
-     * 从缓存中读取内容
+     * 从当前Buffer中读取指定起始位置，固定长度的内容.
+     * 如果：start+length > actualSize，读取的结束位置为actualSize
      * @param start 开始位置
      * @param length 结束位置
-     * @return
+     * @return 读取到的内容
      */
-    std::string * get(off_t start, size_t length);
+    std::shared_ptr<std::string> get(off_t start, size_t length);
 
-    std::string * getAll();
+    /**
+     * 读取当前Buffer中的所有内容
+     * @return 读取到的内容
+     */
+    std::shared_ptr<std::string> getAll();
 
     void onExit();
 

@@ -18,6 +18,7 @@
 #include "alog.h"
 #include "FileOption.h"
 
+
 //typedef struct timeval TimeVal;
 
 Buffer::Buffer(size_t bufferSize) {
@@ -89,25 +90,24 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
 
 
 
-//note free memory
-std::string * Buffer::get(off_t start, size_t length) {
+std::shared_ptr<std::string> Buffer::get(off_t start, size_t length) {
     if (off < start) return nullptr;
     if (length <= 0) return nullptr;
+
+    // 处理读取的区域超过当前Buffer的实际内容区域的情况
+    if (start + length > actualSize) {
+        length = actualSize - start;
+    }
     const uint8_t *copyStart = bufferInternal + start;
     const uint8_t *end = copyStart + length;
     if (end - copyStart >= actualSize) {
         end = bufferInternal + actualSize;
     }
     length = end - copyStart;
-    std::string* result = new std::string();
+    std::shared_ptr<std::string> result(new std::string());
     result->append((const char *)copyStart, length);
     LOGD("result length:%d", result->length());
-
     return result;
-// todo   auto *copyStr = static_cast<uint8_t *>(malloc((length + 1) * sizeof(uint8_t)));
-//    memcpy(copyStr, bufferInternal, length);
-//    copyStr[length] = '\0';
-//    return reinterpret_cast<char *>(copyStr);
 }
 
 
@@ -248,7 +248,7 @@ bool Buffer::isInit() {
 
 
 
-std::string * Buffer::getAll() {
+std::shared_ptr<std::string> Buffer::getAll() {
     LOGD("length buffer:%d", actualSize);
     return get(0, actualSize);
 }
