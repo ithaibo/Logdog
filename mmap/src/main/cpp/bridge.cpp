@@ -129,6 +129,9 @@ shared_ptr<HbLog> deserialize(const uint8_t *toParse) {
     // deserialize
     uint32_t off = 0;
     memcpy(header->magic, toParse + off, LEN_HEADER_MAGIC);
+    if(0 != strcmp(header->magic, MAGIC)) {
+        return nullptr;
+    }
     off += LEN_HEADER_MAGIC;
     memcpy(&header->headerLen, toParse + off, LEN_HEADER_HEADERLEN);
     off += LEN_HEADER_HEADERLEN;
@@ -255,6 +258,10 @@ static jstring readFile(JNIEnv *env, jobject thiz,
     while (off < end) {
         //pare one log
         shared_ptr<HbLog> parsedLog = deserialize(off);
+        if(nullptr == parsedLog) {//寻找第一个MAGIC
+            off++;
+            continue;
+        }
         uint8_t * bodyContent = !parsedLog->body? nullptr : parsedLog->body->content;
         printLog(parsedLog.get());
         if(parsedLog->logLength <= 0) {
