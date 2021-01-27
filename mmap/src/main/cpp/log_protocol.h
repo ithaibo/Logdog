@@ -11,12 +11,13 @@
 #include "utils.h"
 #include "alog.h"
 #include <exception>
+#include <vector>
 
 #define LOG_PRINT true
 
-struct LogHeader {
+struct Header {
     /**魔法值*/
-    char magic[4];
+    char magic[1 + LEN_HEADER_MAGIC];
     /**header长度(文件)*/
     uint32_t headerLen;
     /**时间戳：写入时间*/
@@ -38,7 +39,11 @@ struct LogHeader {
     /**body长度(文件)*/
     uint32_t bodyLen;
 
-    ~LogHeader() {
+    Header() {
+        memset(magic, '\0', 1 + LEN_HEADER_MAGIC);
+    }
+
+    ~Header() {
         LOGI("[LogHeader] destroy");
     }
 };
@@ -46,9 +51,9 @@ struct LogHeader {
 /**
  * 日志内容（可能是压缩、加密后的）
  */
-struct LogBody {
+struct Body {
     uint8_t *content = nullptr;
-    ~LogBody() {
+    ~Body() {
         LOGI("[LogBody] destroy");
     }
 };
@@ -57,8 +62,8 @@ struct LogBody {
  * 好买日志数据结构
  */
 struct HbLog {
-    LogHeader *header = nullptr;
-    LogBody *body = nullptr;
+    Header *header = nullptr;
+    Body *body = nullptr;
     uint32_t logLength;
 
     ~HbLog(){
@@ -66,13 +71,8 @@ struct HbLog {
     }
 };
 
-std::shared_ptr<LogHeader> createLogHeader(
-        uint32_t type,
-        unsigned long crc32,
-        std::string *other,
-        uint32_t bodyLen);
 
-inline void printLogHeader(const LogHeader *header) {
+inline void printLogHeader(const Header *header) {
     if (!LOG_PRINT) return;
 
     if (!header) return;
@@ -95,18 +95,57 @@ inline void printLogHeader(const LogHeader *header) {
     }
 
 }
-
 inline void printLog(const HbLog *log) {
     if (!LOG_PRINT) return;
     if (!log) return;
     printLogHeader(log->header);
     if (log->body && log->body->content) {
-        LOGD("[protocol] log print, body.content:%s", log->body->content);
+//        LOGD("[protocol] log print, body.content:%s", log->body->content);
     } else if (!log->body) {
         LOGD("[protocol] log print, body nullptr");
     } else {
         LOGD("[protocol] log print, body->content nullptr");
     }
 }
+
+class LogProtocol {
+public:
+    /**
+     * 创建LogHeader对象
+     * @param type type
+     * @param crc32 校验码
+     * @param other 其他数据
+     * @param bodyLen body长度
+     * @return LogHeader的智能指针
+     */
+    static std::shared_ptr<Header> createLogHeader(
+            uint32_t type,
+            unsigned long crc32,
+            std::string *other,
+            uint32_t bodyLen);
+
+    /**
+     * 创建日志对象
+     * @param logContent 日志内容
+     * @param lengthBody 内容长度
+     */
+    static std::shared_ptr<HbLog> createLogItem(uint8_t *logContent, size_t lengthBody);
+
+    /**
+     * 数据序列化
+     * @param log
+     * @return
+     */
+    static uint8_t *serialize(const HbLog *log);
+
+    /**
+     * 数据反序列化
+     * @param toParse
+     * @return
+     */
+    static std::shared_ptr<HbLog> deserialize(const uint8_t *toParse);
+
+    static std::vector<std::shared_ptr<HbLog>> parseAll(const uint8_t *toParse, size_t length);
+};
 
 #endif //LOG_PROTOCOL_H

@@ -36,6 +36,7 @@ public:
     }
 
     void setFilePath(const char* path);
+    const char* getFilePath();
 
     virtual /**
      * 追加写入
@@ -44,20 +45,6 @@ public:
      * @return 写入的内容在缓冲中的起始位置
      */
     bool append(const uint8_t *content, size_t lengthToSave);
-    /**
-     * 从当前Buffer中读取指定起始位置，固定长度的内容.
-     * 如果：start+length > actualSize，读取的结束位置为actualSize
-     * @param start 开始位置
-     * @param length 结束位置
-     * @return 读取到的内容
-     */
-    std::shared_ptr<std::string> get(off_t start, size_t length);
-
-    /**
-     * 读取当前Buffer中的所有内容
-     * @return 读取到的内容
-     */
-    std::shared_ptr<std::string> getAll();
 
     void onExit();
 

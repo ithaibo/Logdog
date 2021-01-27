@@ -16,5 +16,7 @@ public:
     bool fileExists(const char * filePath);
 
     int openFdForMMAP(const char* path);
+
+    std::string readFileAll(const char *filePath);
 };
 #endif //LOGDOG_FILEOPTION_H

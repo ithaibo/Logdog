@@ -56,3 +56,21 @@ bool FileOption::fileExists(const char *filePath) {
 int FileOption::openFdForMMAP(const char *path) {
     return open(path, O_RDWR | O_CREAT, (mode_t)0600);
 }
+
+std::string FileOption::readFileAll(const char *filePath) {
+    std::string readResult;
+    int fd = open(filePath, O_RDONLY);
+    if(fd < 0) {
+        return readResult;
+    }
+    size_t fileLength = obtainFileSize(filePath);
+    if (fileLength <= 0) {
+        return readResult;
+    }
+    uint8_t buffer[4096];
+    size_t n;
+    while ((n =read(fd, buffer, 4096)) > 0) {
+        readResult.append((const char *)buffer, n);
+    }
+    return readResult;
+}

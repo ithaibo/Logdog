@@ -90,30 +90,10 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
 
 
 
-std::shared_ptr<std::string> Buffer::get(off_t start, size_t length) {
-    if (off < start) return nullptr;
-    if (length <= 0) return nullptr;
-
-    // 处理读取的区域超过当前Buffer的实际内容区域的情况
-    if (start + length > actualSize) {
-        length = actualSize - start;
-    }
-    const uint8_t *copyStart = bufferInternal + start;
-    const uint8_t *end = copyStart + length;
-    if (end - copyStart >= actualSize) {
-        end = bufferInternal + actualSize;
-    }
-    length = end - copyStart;
-    std::shared_ptr<std::string> result(new std::string());
-    result->append((const char *)copyStart, length);
-    LOGD("result length:%d", result->length());
-    return result;
-}
-
-
-
 void Buffer::setFilePath(const char *path) {
-    filePath = path;
+    char *temp = new char[strlen(path)];
+    memcpy(temp, path, strlen(path));
+    filePath = temp;
 }
 
 
@@ -247,8 +227,6 @@ bool Buffer::isInit() {
 }
 
 
-
-std::shared_ptr<std::string> Buffer::getAll() {
-    LOGD("length buffer:%d", actualSize);
-    return get(0, actualSize);
+const char *Buffer::getFilePath() {
+    return filePath;
 }
