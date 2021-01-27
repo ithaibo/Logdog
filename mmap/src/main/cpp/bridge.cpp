@@ -115,11 +115,16 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
     }
     // 这里可能存在多条日志
     auto *off = (uint8_t *) readFromFile.c_str();
-    const size_t length = readFromFile.length();
+    size_t length = readFromFile.length();
+    for(int i = length - 1; i >= 0; i--) {
+        if (off[i] == '\0') continue;
+        length = i + 1;
+        break;
+    }
     uint8_t *end = off + length;
     vector<shared_ptr<HbLog>> logParseList;
     string temp;
-    while (off < end) { //TODO EOF处理
+    while (off < end) {
         //pare one log
         shared_ptr<HbLog> parsedLog = LogProtocol::deserialize(off);
         if(nullptr == parsedLog) {//寻找第一个MAGIC
