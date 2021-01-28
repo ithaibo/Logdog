@@ -32,7 +32,7 @@ public class Logdog implements ILogger {
     private Mmap mmap;
     private String path;
 
-    public boolean init(@NonNull String path) {
+    public synchronized boolean init(@NonNull String path) {
         if (!TextUtils.equals(path, this.path)) {
             this.path = path;
         } else {
@@ -79,7 +79,7 @@ public class Logdog implements ILogger {
     }
 
     private boolean writeLog(String log) {
-        Objects.requireNonNull(mmap, "Mmap == null");
+        if (null == mmap) return false;
         if (TextUtils.isEmpty(log)) {
             Log.w("Logdog", "content of log is empty!");
             return false;
@@ -116,7 +116,7 @@ public class Logdog implements ILogger {
                 .toString();
     }
 
-    private void release() {
+    private synchronized void release() {
         if (null == mmap) return;
         mmap = null;
     }

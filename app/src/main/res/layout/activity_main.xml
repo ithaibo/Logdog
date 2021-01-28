@@ -33,15 +33,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/et" />
 
-    <Button
-        android:id="@+id/btn_wri"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="write with mmap"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/et" />
 
     <Button
         android:id="@+id/btn_benchmark"
@@ -51,7 +42,7 @@
         android:text="benchmark"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btn_wri" />
+        app:layout_constraintTop_toBottomOf="@+id/btn_write_mmap" />
 
     <androidx.core.widget.NestedScrollView
         app:layout_constraintTop_toBottomOf="@id/btn_benchmark"

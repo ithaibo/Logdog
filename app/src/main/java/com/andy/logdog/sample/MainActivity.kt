@@ -3,8 +3,10 @@ package com.andy.logdog.sample
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.andy.logdog.sample.benchmark.Benchmark
+import com.andy.logdog.sample.logdog.Logdog
 import com.andy.mmap.Mmap
 import com.andy.note.R
 import kotlinx.android.synthetic.main.activity_main.*
@@ -13,14 +15,13 @@ class MainActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
-//        Logdog.getInstance().i("MainActivity.onCreate invoked")
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         // Example of a call to a native method
         btn_read.setOnClickListener { readFile() }
-        btn_write_mmap.setOnClickListener { writeInputWithMMAP() }
         btn_benchmark.setOnClickListener { startActivity(Intent(this, Benchmark::class.java)) }
+        findViewById<View>(R.id.btn_write_mmap).setOnClickListener { writeInputWithMMAP() }
     }
 
     private fun getEditInput(): String {
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun writeInputWithMMAP() {
-        Mmap.getInstance().save(getEditInput())
+        Logdog.getInstance().d(getEditInput())
         et.setText("")
     }
 
@@ -41,12 +42,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-//        Logdog.getInstance().d("MainActivity.onAttachedToWindow invoked")
+        Logdog.getInstance().d("MainActivity.onAttachedToWindow invoked")
     }
 
     override fun onStart() {
         super.onStart()
-//        Logdog.getInstance().d("MainActivity.onStart invoked")
+        Logdog.getInstance().d("MainActivity.onStart invoked")
     }
 
     override fun onResume() {
