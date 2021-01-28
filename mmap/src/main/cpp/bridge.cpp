@@ -18,6 +18,8 @@
 #include "log_type.h"
 #include <vector>
 
+#include "MmapMain.h"
+
 using namespace std;
 
 static int registerNativeMethods(JNIEnv *env, jclass cls);
@@ -55,44 +57,25 @@ extern "C" JNIEXPORT JNICALL jint JNI_OnLoad(JavaVM *vm, void *reserved) {
  */
 static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
     const char *path = env->GetStringUTFChars(jpath, JNI_FALSE);
-    auto *buffer = new Buffer();
-    buffer->doInit(path);
-    env->ReleaseStringUTFChars(jpath, path);
+    Buffer *buffer = MmapMain::createBuffer(path);
     return (jlong) buffer;
 }
 
+/**
+ * 保存
+ * @param env
+ * @param thiz
+ * @param buffer
+ * @param content
+ * @return
+ */
 static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring content) {
-    Buffer *bufferStatic = getBuffer(buffer);
-    if (nullptr == bufferStatic || !bufferStatic->isInit()) {
-        LOGW("buffer not init");
-        return false;
-    }
-
     const char *content_chars = env->GetStringUTFChars(content, JNI_FALSE);
-    int length = strlen(content_chars);
-
-    //compress
-    string compressedStr;
-    int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
-                                Z_BEST_COMPRESSION);
-    if(Z_OK != codeCompress) {
-        env->ReleaseStringUTFChars(content, content_chars);
-        LOGE("[mmap] compress failed");
-        return false;
-    }
-    int lengthAfterCompress = compressedStr.length();
-    HbLog log = LogProtocol::createLogItem(compressedStr, lengthAfterCompress);
-    printLog(log);
-
-    //serialize
-    uint8_t *toSave = LogProtocol::serialize(log);
-    //save
-    bool resultAppend = bufferStatic->append(toSave, log.logLength);
-    //clear up
-    delete []toSave;
+    bool resultAppend = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
     env->ReleaseStringUTFChars(content, content_chars);
     return resultAppend;
 }
+#pragma clang diagnostic pop
 
 
 /**
@@ -136,10 +119,7 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
 }
 
 static void onExit(JNIEnv *env, jobject thiz, jlong buffer) {
-    Buffer *bufferStatic = getBuffer(buffer);
-    if (nullptr == bufferStatic) return;
-    bufferStatic->onExit();
-    delete bufferStatic;
+    MmapMain::flushAndArchive(getBuffer(buffer));
 }
 
 

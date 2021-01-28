@@ -10,22 +10,20 @@ add_library( # Sets the name of the library.
         mmap-lib
         # Sets the library as a shared library.
         SHARED
-        # Provides a relative path to your source file(s).
+        # jni bridge
         bridge.cpp
+        # file options
         FileOption.cpp
-        base64.h
-        base64.cpp
+        # mmap
         Buffer.h
         Buffer.cpp
-
         # compress
         compress/Zip.cpp
-
-        # compress
-
         # log protocol
         log_protocol.h
         log_protocol.cpp
+        # enrance
+        MmapMain.cpp
         )
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

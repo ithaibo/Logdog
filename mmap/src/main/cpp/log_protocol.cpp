@@ -133,9 +133,7 @@ HbLog LogProtocol::parseOneLog(std::string &rawStr, LogRegionNeedParse positionA
             return parsedLog;
         }
         int codeDecompress = decompress(toParse + off, header->bodyLen, parsedLog.body.content);
-        if (Z_OK == codeDecompress) {
-            LOGE("[mmap] decompress log body succeed, content:%s", parsedLog.body.content.data());
-        } else {
+        if (Z_OK != codeDecompress) {
             LOGE("[mmap] decompress log body failed");
         }
         parsedLog.header.bodyLen = parsedLog.body.content.length();

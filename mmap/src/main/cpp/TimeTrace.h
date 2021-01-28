@@ -12,7 +12,6 @@ private:
     long long initCost;
     long long openFile;
     long long mmap;
-    long long
 };
 
 
