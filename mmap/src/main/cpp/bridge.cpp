@@ -110,30 +110,25 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
     }
     FileOption fileOption;
     string readFromFile = fileOption.readFileAll(bufferStatic->getFilePath());
+    LOGD("[bridge] read file done");
     if (readFromFile.empty()) {
         return nullptr;
     }
     // 这里可能存在多条日志
-    uint8_t off[readFromFile.length()+1];
-    memcpy(off, readFromFile.data(), readFromFile.length());
-    off[readFromFile.length()] = '\0';
-    readFromFile.data();
-    const size_t length = readFromFile.length();
-    uint8_t *end = off + length;
-    string temp;
+    LOGD("[bridge] start to parse magic positions...");
     vector<LogRegionNeedParse> allMagicPos = LogProtocol::parseAllMagicPosition(readFromFile);
     LOGD("[bridge] count magic position found:%d", allMagicPos.size());
+    string temp;
     for_each(allMagicPos.begin(), allMagicPos.end(), [&](LogRegionNeedParse serializedLog) {
         HbLog parsedLog = LogProtocol::parseOneLog(readFromFile, serializedLog);
-        if (parsedLog.logLength > 0 && (!parsedLog.body.content.empty())) {
+        if (parsedLog.logLength > 0 && !parsedLog.body.content.empty()) {
             printLog(parsedLog);
             temp.append(parsedLog.body.content);
-            LOGD("[bridge] append body content:%s", parsedLog.body.content.data());
             temp.append("\n");
         }
     });
     LOGD("[bridge] total log parsed count:%d", allMagicPos.size());
-    LOGD("[bridge] all read from file, length:%d, content:%s", temp.length(), temp.c_str());
+    LOGD("[bridge] all read from file, length:%d", temp.length());
     //release memory
     jstring result = env->NewStringUTF(temp.empty()? "" : temp.c_str());
     //release memory
@@ -156,9 +151,7 @@ static JNINativeMethod methods[] = {
 };
 
 static int registerNativeMethods(JNIEnv *env, jclass cls) {
-    return env->RegisterNatives(cls,
-                                methods,
-                                sizeof(methods) / sizeof(methods[0]));
+    return env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(methods[0]));
 }
 
 static Buffer *getBuffer(jlong addr) {
