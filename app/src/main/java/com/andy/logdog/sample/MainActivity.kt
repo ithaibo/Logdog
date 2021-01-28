@@ -42,12 +42,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        Logdog.getInstance().d("MainActivity.onAttachedToWindow invoked")
+//        Logdog.getInstance().d("MainActivity.onAttachedToWindow invoked")
     }
 
     override fun onStart() {
         super.onStart()
-        Logdog.getInstance().d("MainActivity.onStart invoked")
+//        Logdog.getInstance().d("MainActivity.onStart invoked")
     }
 
     override fun onResume() {

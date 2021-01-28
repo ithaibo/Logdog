@@ -1,5 +1,5 @@
 //
-// Created by Andy on 2020-01-27.
+// Created by haibo.wu on 2020-01-27.
 //
 
 #ifndef LOGDOG_BUFFER_H
@@ -50,7 +50,7 @@ public:
 
 protected:
     static const int FD_NOT_OPEN = -1;
-    const size_t DEFAULT_BUFFER_SIZE = 256 * (size_t)getpagesize();
+    const size_t DEFAULT_BUFFER_SIZE = 64 * (size_t)getpagesize(); //256
     /**size of buffer*/
     size_t BUFFER_UNIT_SIZE = DEFAULT_BUFFER_SIZE;
     /**buffer map file*/

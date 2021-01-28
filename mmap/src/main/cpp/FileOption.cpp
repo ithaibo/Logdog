@@ -65,8 +65,12 @@ std::string FileOption::readFileAll(const char *filePath) {
     }
     uint8_t buffer[4096];
     size_t n;
+    size_t off = 0;
     while ((n =read(fd, buffer, 4096)) > 0) {
         readResult.append((const char *)buffer, n);
+        off+=n;
     }
+    //shrink
+    readResult.shrink_to_fit();
     return readResult;
 }

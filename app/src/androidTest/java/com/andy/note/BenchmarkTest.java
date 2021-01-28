@@ -6,6 +6,7 @@ import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.andy.logdog.sample.benchmark.LocalMockLogRepository;
 import com.andy.logdog.sample.benchmark.Performance;
 import com.andy.logdog.sample.benchmark.XLogger;
 import com.andy.logdog.sample.logdog.Logdog;
