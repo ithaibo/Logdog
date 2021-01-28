@@ -35,7 +35,7 @@ struct Header {
     /**保留区长度(文件)*/
     uint32_t otherLen;
     /**保留区内容*/
-    uint8_t *other = nullptr;
+    std::string other;
     /**body长度(文件)*/
     uint32_t bodyLen;
 
@@ -52,7 +52,8 @@ struct Header {
  * 日志内容（可能是压缩、加密后的）
  */
 struct Body {
-    uint8_t *content = nullptr;
+    std::string content;
+
     ~Body() {
         LOGI("[LogBody] destroy");
     }
@@ -62,13 +63,24 @@ struct Body {
  * 好买日志数据结构
  */
 struct HbLog {
-    Header *header = nullptr;
-    Body *body = nullptr;
+    Header header;
+    Body body;
     uint32_t logLength;
 
-    ~HbLog(){
+    ~HbLog() {
         LOGI("[HbLog] destroy");
     }
+};
+
+
+/**
+ * 一条待解析的序列化日志数据的其实位置（MGAIC位置），及该条日志的长度
+ */
+struct LogRegionNeedParse {
+    /**MGAIC位置*/
+    size_t magicPos;
+    /**该条日志的长度*/
+    size_t length;
 };
 
 
@@ -86,25 +98,22 @@ inline void printLogHeader(const Header *header) {
         LOGD("[protocol] log print, header.type:%d", header->type);
         LOGD("[protocol] log print, header.crc32:%lu", header->crc32);
         LOGD("[protocol] log print, header.otherLen:%d", header->otherLen);
-        if (header->other) {
-            LOGD("[protocol] log print, header.other:%s", header->other);
+        if (!header->other.empty()) {
+            LOGD("[protocol] log print, header.other:%s", header->other.c_str());
         }
         LOGD("[protocol] log print, header.bodyLen:%d", header->bodyLen);
-    } catch(...) {
+    } catch (...) {
         LOGE("[protocol] exception occur during log print");
     }
 
 }
-inline void printLog(const HbLog *log) {
+
+inline void printLog(const HbLog &log) {
     if (!LOG_PRINT) return;
-    if (!log) return;
-    printLogHeader(log->header);
-    if (log->body && log->body->content) {
+    if (log.logLength <= 0) return;
+    printLogHeader(&log.header);
+    if (!log.body.content.empty()) {
 //        LOGD("[protocol] log print, body.content:%s", log->body->content);
-    } else if (!log->body) {
-        LOGD("[protocol] log print, body nullptr");
-    } else {
-        LOGD("[protocol] log print, body->content nullptr");
     }
 }
 
@@ -118,34 +127,25 @@ public:
      * @param bodyLen body长度
      * @return LogHeader的智能指针
      */
-    static std::shared_ptr<Header> createLogHeader(
-            uint32_t type,
-            unsigned long crc32,
-            std::string *other,
-            uint32_t bodyLen);
+    static Header createLogHeader(uint32_t type, unsigned long crc32, std::string &other, uint32_t bodyLen);
 
     /**
      * 创建日志对象
      * @param logContent 日志内容
      * @param lengthBody 内容长度
      */
-    static std::shared_ptr<HbLog> createLogItem(uint8_t *logContent, size_t lengthBody);
+    static HbLog createLogItem(std::string &logContent, size_t lengthBody);
 
     /**
      * 数据序列化
      * @param log
      * @return
      */
-    static uint8_t *serialize(const HbLog *log);
+    static uint8_t *serialize(const HbLog &log);
 
-    /**
-     * 数据反序列化
-     * @param toParse
-     * @return
-     */
-    static std::shared_ptr<HbLog> deserialize(const uint8_t *toParse);
+    static std::vector<LogRegionNeedParse> parseAllMagicPosition(std::string &str);
 
-    static std::vector<std::shared_ptr<HbLog>> parseAll(const uint8_t *toParse, size_t length);
+    static HbLog parseOneLog(std::string &rawStr, LogRegionNeedParse positionAndLength);
 };
 
 #endif //LOG_PROTOCOL_H

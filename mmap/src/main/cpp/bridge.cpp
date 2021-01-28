@@ -81,13 +81,13 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
         return false;
     }
     int lengthAfterCompress = compressedStr.length();
-    shared_ptr<HbLog> log = LogProtocol::createLogItem((uint8_t *) compressedStr.c_str(), lengthAfterCompress);
-    printLog(log.get());
+    HbLog log = LogProtocol::createLogItem(compressedStr, lengthAfterCompress);
+    printLog(log);
 
     //serialize
-    uint8_t *toSave = LogProtocol::serialize(log.get());
+    uint8_t *toSave = LogProtocol::serialize(log);
     //save
-    bool resultAppend = bufferStatic->append(toSave, log->logLength);
+    bool resultAppend = bufferStatic->append(toSave, log.logLength);
     //clear up
     delete []toSave;
     env->ReleaseStringUTFChars(content, content_chars);
@@ -114,37 +114,27 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
         return nullptr;
     }
     // 这里可能存在多条日志
-    auto *off = (uint8_t *) readFromFile.c_str();
+    uint8_t off[readFromFile.length()+1];
+    memcpy(off, readFromFile.data(), readFromFile.length());
+    off[readFromFile.length()] = '\0';
+    readFromFile.data();
     const size_t length = readFromFile.length();
     uint8_t *end = off + length;
-    vector<shared_ptr<HbLog>> logParseList;
     string temp;
-    while (off < end) { //TODO EOF处理
-        //pare one log
-        shared_ptr<HbLog> parsedLog = LogProtocol::deserialize(off);
-        if(nullptr == parsedLog) {//寻找第一个MAGIC
-            off++;
-            continue;
+    vector<LogRegionNeedParse> allMagicPos = LogProtocol::parseAllMagicPosition(readFromFile);
+    LOGD("[bridge] count magic position found:%d", allMagicPos.size());
+    for_each(allMagicPos.begin(), allMagicPos.end(), [&](LogRegionNeedParse serializedLog) {
+        HbLog parsedLog = LogProtocol::parseOneLog(readFromFile, serializedLog);
+        if (parsedLog.logLength > 0 && (!parsedLog.body.content.empty())) {
+            printLog(parsedLog);
+            temp.append(parsedLog.body.content);
+            LOGD("[bridge] append body content:%s", parsedLog.body.content.data());
+            temp.append("\n");
         }
-        uint8_t * bodyContent = !parsedLog->body? nullptr : parsedLog->body->content;
-        printLog(parsedLog.get());
-        if(parsedLog->logLength <= 0) {
-            LOGW("[bridge] log length parse <= 0");
-            break;
-        }
-        logParseList.push_back(parsedLog);
-        off += parsedLog->logLength;
-        if(!parsedLog -> body || !bodyContent) {
-            LOGW("[bridge] log body or content of body is empty");
-            continue;
-        }
-        temp.append((const char*)bodyContent);
-        temp.append("\n");
-    }
-    LOGD("[bridge] total log parsed count:%d", logParseList.size());
+    });
+    LOGD("[bridge] total log parsed count:%d", allMagicPos.size());
     LOGD("[bridge] all read from file, length:%d, content:%s", temp.length(), temp.c_str());
     //release memory
-    logParseList.clear();
     jstring result = env->NewStringUTF(temp.empty()? "" : temp.c_str());
     //release memory
     return result;

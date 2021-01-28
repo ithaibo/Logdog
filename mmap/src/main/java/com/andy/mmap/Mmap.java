@@ -47,7 +47,7 @@ public class Mmap {
             return false;
         }
         if (buffer == -1) {
-            throw new IllegalStateException("buffer not available, please create it");
+            return false;
         }
 //        long start = System.nanoTime();
         boolean success = mmapWrite(buffer, log);
