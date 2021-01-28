@@ -9,10 +9,11 @@
 #include "alog.h"
 #include <time.h>
 
-inline unsigned long getTimeStamp() {
+inline uint64_t getTimeStamp() {
     timeval time;
     gettimeofday(&time, nullptr);
-    return time.tv_sec * 1000 + time.tv_usec / 1000;
+    uint64_t timestamp = (uint64_t)time.tv_sec * 1000 + time.tv_usec / 1000;
+    return timestamp;
 }
 
 inline unsigned long long getTimeUSDNow() {

@@ -12,11 +12,12 @@ constexpr const char *MAGIC = "HLOG";
 constexpr const char *ZLIB = "zlib";
 
 constexpr uint32_t UINT32_LEN = sizeof(uint32_t);
+constexpr uint32_t UINT64_LEN = sizeof(uint64_t);
 
 /**写入文件的日志头-m魔法*/
 constexpr uint32_t LEN_HEADER_MAGIC = 4;
 constexpr uint32_t LEN_HEADER_HEADERLEN = UINT32_LEN;
-constexpr uint32_t LEN_HEADER_TIMESTAMP = UINT32_LEN;
+constexpr uint32_t LEN_HEADER_TIMESTAMP = UINT64_LEN;
 constexpr uint32_t LEN_HEADER_VERSION = 4;
 constexpr uint32_t LEN_HEADER_ENCRYPT = 4;
 constexpr uint32_t LEN_HEADER_ZIP = 4;

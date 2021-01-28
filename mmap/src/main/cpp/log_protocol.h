@@ -21,7 +21,7 @@ struct Header {
     /**header长度(文件)*/
     uint32_t headerLen;
     /**时间戳：写入时间*/
-    u_long timestamp = getTimeStamp();
+    uint64_t timestamp = getTimeStamp();
     /**存储软件版本号(整数字符串),对应config中的VERSION*/
     uint32_t version = VERSION;
     /**加密 1:加密；0：未加密*/
@@ -91,7 +91,7 @@ inline void printLogHeader(const Header *header) {
     try {
         LOGD("[protocol] log print, header.magic:%s", header->magic);
         LOGD("[protocol] log print, header.headerLen:%d", header->headerLen);
-        LOGD("[protocol] log print, header.timestamp:%lu", header->timestamp);
+        LOGD("[protocol] log print, header.timestamp:%llu", header->timestamp);
         LOGD("[protocol] log print, header.version:%d", header->version);
         LOGD("[protocol] log print, header.encrypt:%d", header->encrypt);
         LOGD("[protocol] log print, header.zip:%d", header->zip);
