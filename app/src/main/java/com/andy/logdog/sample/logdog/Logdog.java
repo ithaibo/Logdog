@@ -14,11 +14,6 @@ import com.andy.mmap.Utils;
 
 import java.util.Objects;
 
-/**
- * todo 多种类型数据如何序列化、反序列化？
- * todo 写入其他数据类型
- * todo 读取其他类型的数据
- */
 public class Logdog implements ILogger {
 
     private static class H {
