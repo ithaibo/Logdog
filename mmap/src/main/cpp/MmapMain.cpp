@@ -3,6 +3,12 @@
 //
 
 #include "MmapMain.h"
+#include "FileOption.h"
+
+#include <iostream>
+#include <fstream>
+
+#define COMPRESS true
 
 Buffer *MmapMain::createBuffer(const char *path) {
     auto *buffer = new Buffer();
@@ -16,13 +22,19 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
 
     //compress
     string compressedStr;
-    int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
-                                Z_BEST_COMPRESSION);
-    if(Z_OK != codeCompress) {
-        LOGE("[mmap] compress failed");
-        return false;
+    int lengthAfterCompress;
+    if(COMPRESS) {
+        int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
+                                    Z_BEST_COMPRESSION);
+        if(Z_OK != codeCompress) {
+            LOGE("[mmap] compress failed");
+            return false;
+        }
+        lengthAfterCompress = compressedStr.length();
+    } else {
+        compressedStr = string(content_chars);
+        lengthAfterCompress = length;
     }
-    int lengthAfterCompress = compressedStr.length();
     HbLog log = LogProtocol::createLogItem(compressedStr, lengthAfterCompress);
     printLog(log);
 
@@ -39,4 +51,5 @@ bool MmapMain::flushAndArchive(Buffer *buffer) {
     if (!buffer) return false;
     buffer->onExit();
     delete buffer;
+    return true;
 }

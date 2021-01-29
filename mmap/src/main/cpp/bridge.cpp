@@ -6,7 +6,6 @@
 
 #include "alog.h"
 #include "FileOption.h"
-#include "base64.h"
 #include "Buffer.h"
 #include <unistd.h>
 #include "compress/Zip.h"
@@ -71,11 +70,14 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
  */
 static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring content) {
     const char *content_chars = env->GetStringUTFChars(content, JNI_FALSE);
-    bool resultAppend = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
+    unsigned long long timestart = getTimeUSDNow();
+    bool saveResult;
+    saveResult = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
+    unsigned long long timeend = getTimeUSDNow();
+    LOGI("[bridge] time cost 10000 write:%llu", (timeend - timestart));
     env->ReleaseStringUTFChars(content, content_chars);
-    return resultAppend;
+    return saveResult;
 }
-#pragma clang diagnostic pop
 
 
 /**

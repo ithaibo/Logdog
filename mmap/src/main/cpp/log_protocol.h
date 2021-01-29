@@ -13,7 +13,7 @@
 #include <exception>
 #include <vector>
 
-#define LOG_PRINT true
+#define LOG_PRINT false
 
 struct Header {
     /**魔法值*/
@@ -42,10 +42,6 @@ struct Header {
     Header() {
         memset(magic, '\0', 1 + LEN_HEADER_MAGIC);
     }
-
-    ~Header() {
-        LOGI("[LogHeader] destroy");
-    }
 };
 
 /**
@@ -53,10 +49,6 @@ struct Header {
  */
 struct Body {
     std::string content;
-
-    ~Body() {
-        LOGI("[LogBody] destroy");
-    }
 };
 
 /**
@@ -66,10 +58,6 @@ struct HbLog {
     Header header;
     Body body;
     uint32_t logLength;
-
-    ~HbLog() {
-        LOGI("[HbLog] destroy");
-    }
 };
 
 

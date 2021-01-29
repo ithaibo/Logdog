@@ -58,10 +58,13 @@ public class SyncLogger implements ILogger {
     }
 
     private void writeLog(String pattern) {
+        byte[] data = ZlibUtils.gzip(pattern.getBytes());
+        if (null == data) return;
+
         File file = new File(path);
         try {
             fos = new FileOutputStream(file, true);
-            fos.write(pattern.getBytes());
+            fos.write(data);
             fos.flush();
 
         } catch (IOException e) {

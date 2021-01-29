@@ -12,7 +12,6 @@
 #include <malloc.h>
 #include "FileOption.h"
 #include "alog.h"
-#include "base64.h"
 
 
 
@@ -75,4 +74,18 @@ std::string FileOption::readFileAll(const char *filePath) {
         off+=n;
     }
     return readResult;
+}
+
+void FileOption::writeFile(std::string &path, void *data) {
+    int fd = open(path.c_str(), O_RDWR|O_CREAT, (mode_t)0600);
+    if(fd < 0) {
+        return;
+    }
+    uint8_t buffer[4096];
+    size_t n;
+    size_t off;
+    while ((n = write(fd, data, 4096)) > 0) {
+        off += n;
+    }
+    close(fd);
 }

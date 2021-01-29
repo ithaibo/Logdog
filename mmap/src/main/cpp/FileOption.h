@@ -16,5 +16,7 @@ public:
     int openFdForMMAP(const char* path);
 
     std::string readFileAll(const char *filePath);
+
+    static void writeFile(std::string &path, void* data);
 };
 #endif //LOGDOG_FILEOPTION_H

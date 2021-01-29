@@ -30,7 +30,6 @@ Header LogProtocol::createLogHeader(uint32_t type, unsigned long crc32, std::str
 HbLog LogProtocol::createLogItem(std::string &logContent, size_t lengthBody) {
     HbLog log;
     log.body.content = std::move(logContent);
-    LOGD("[bridge] sizeof(unsigned long):%d", sizeof(unsigned long ));
     unsigned long crc = crc32(0L, (Bytef*)log.body.content.data(), lengthBody);
     std::string emptyOther;
     log.header = createLogHeader(LogType::E2E, crc, emptyOther, lengthBody);
@@ -94,7 +93,7 @@ HbLog LogProtocol::parseOneLog(std::string &rawStr, LogRegionNeedParse positionA
     memcpy(&header->headerLen, toParse + off, LEN_HEADER_HEADERLEN);
     off += LEN_HEADER_HEADERLEN;
     if (header->headerLen >= positionAndLength.length) {//broken log, no need to parse
-        LOGW("[protocol] parseOneLog failed, headerLen:%d >= region length:%d", header->headerLen, positionAndLength.length);
+        LOGW("[protocol] parseOneLog failed, headerLen:%d >= region length:%zu", header->headerLen, positionAndLength.length);
         return parsedLog;
     }
     memcpy(&header->timestamp, toParse + off, LEN_HEADER_TIMESTAMP);
@@ -152,7 +151,7 @@ std::vector<LogRegionNeedParse> LogProtocol::parseAllMagicPosition(std::string &
         str.copy(magicBuffer, LEN_HEADER_MAGIC, off);
         if (0 == strcmp(magicBuffer, MAGIC)) {
             magicOffPositions.push_back(LogRegionNeedParse({off, 0}));
-            LOGD("[protocol] magic position found:%d", off);
+            LOGD("[protocol] magic position found:%zu", off);
             off += LEN_HEADER_MAGIC;
             continue;
         }
@@ -163,10 +162,10 @@ std::vector<LogRegionNeedParse> LogProtocol::parseAllMagicPosition(std::string &
     if (1 < magicOffPositions.size()) {
         for (int i = 1; i < magicOffPositions.size(); i++) {
             magicOffPositions.at(i - 1).length = magicOffPositions.at(i).magicPos - magicOffPositions.at(i - 1).magicPos;
-            LOGD("[protocol] log index:%d, region length:%d", i-1, magicOffPositions.at(i-1).length);
+            LOGD("[protocol] log index:%d, region length:%zu", i-1, magicOffPositions.at(i-1).length);
         }
     }
     magicOffPositions.at(magicOffPositions.size()-1).length = str.length() - magicOffPositions.at(magicOffPositions.size()-1).magicPos;
-    LOGD("[protocol] log index:%d, region length:%d", magicOffPositions.size()-1, magicOffPositions.at(magicOffPositions.size()-1).length);
+    LOGD("[protocol] log index: %u, region length:%zu", magicOffPositions.size()-1, magicOffPositions.at(magicOffPositions.size()-1).length);
     return magicOffPositions;
 }
