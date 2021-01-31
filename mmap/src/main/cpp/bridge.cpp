@@ -6,7 +6,6 @@
 
 #include "alog.h"
 #include "FileOption.h"
-#include "base64.h"
 #include "Buffer.h"
 #include <unistd.h>
 #include "compress/Zip.h"

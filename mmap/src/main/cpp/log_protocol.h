@@ -13,7 +13,7 @@
 #include <exception>
 #include <vector>
 
-#define LOG_PRINT true
+#define LOG_PRINT false
 
 struct Header {
     /**魔法值*/

@@ -12,7 +12,6 @@
 #include <malloc.h>
 #include "FileOption.h"
 #include "alog.h"
-#include "base64.h"
 
 
 
