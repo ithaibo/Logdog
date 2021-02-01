@@ -57,6 +57,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
+
+    <TextView
+        app:layout_constraintTop_toBottomOf="@id/btn_xlog"
+        android:id="@+id/tv_logan"
+        android:hint="to start..."
+        android:layout_marginTop="30dp"
+        android:layout_width="match_parent"
+        android:minHeight="30dp"
+        android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/btn_logan"
+        app:layout_constraintTop_toBottomOf="@id/tv_logan"
+        android:text="test logan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
     <EditText
         android:id="@+id/et_times"
         app:layout_constraintBottom_toBottomOf="parent"

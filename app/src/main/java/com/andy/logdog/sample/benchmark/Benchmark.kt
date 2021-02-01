@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import com.andy.logdog.sample.logdog.Logdog
 import com.andy.note.R
+import com.dianping.logan.Logan
 import kotlinx.android.synthetic.main.activity_benchmark.*
 import java.math.BigDecimal
 
@@ -16,6 +17,28 @@ class Benchmark : AppCompatActivity() {
         btn_mmap.setOnClickListener {testMmap()}
         btn_sync_io.setOnClickListener {testSyncIO()}
         btn_xlog.setOnClickListener {testXLog()}
+        btn_logan.setOnClickListener { testLogan() }
+    }
+
+    private fun testLogan() {
+        val logdogThread = Thread{
+            val result = Result()
+            result.timesWrite = readTimes()
+            val start = System.currentTimeMillis()
+            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+            for (i in 0 until  result.timesWrite) {
+                Logan.w(LocalMockLogRepository.apiResponse, 2)
+                Logan.f()
+                result.successTimes++
+            }
+            val end = System.currentTimeMillis()
+            result.timeCost = end - start
+            result.contentLength = lengthContent
+            result.writeType = "logan"
+            tv_mmap.post { tv_logan.text = result.toString() }
+        }
+        logdogThread.name = "Logan"
+        logdogThread.start()
     }
 
     fun testMmap() {
