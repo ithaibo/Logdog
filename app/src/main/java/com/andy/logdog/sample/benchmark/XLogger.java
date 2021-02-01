@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.andy.log.ILogger;
 import com.andy.note.BuildConfig;
-//import com.tencent.mars.xlog.Log;
+import com.tencent.mars.xlog.Log;
 import com.tencent.mars.xlog.Xlog;
 
 public class XLogger implements ILogger {
@@ -15,8 +15,8 @@ public class XLogger implements ILogger {
         return H.instance;
     }
     static {
-//        System.loadLibrary("c++_shared");
-//        System.loadLibrary("marsxlog");
+        System.loadLibrary("c++_shared");
+        System.loadLibrary("marsxlog");
     }
 
 
@@ -31,40 +31,40 @@ public class XLogger implements ILogger {
         final String cachePath = path + "/xlog";
 
         //init xlog
-//        Xlog xlog = new Xlog();
-//        Log.setLogImp(xlog);
+        Xlog xlog = new Xlog();
+        Log.setLogImp(xlog);
 
         if (BuildConfig.DEBUG) {
-//            Log.setConsoleLogOpen(false);
-//            Log.appenderOpen(Xlog.LEVEL_DEBUG, Xlog.AppednerModeSync, cachePath, logPath, "XLOGSAMPLE", 0);
+            Log.setConsoleLogOpen(false);
+            Log.appenderOpen(Xlog.LEVEL_DEBUG, Xlog.AppednerModeSync, cachePath, logPath, "XLOGSAMPLE", 0);
         } else {
-//            Log.setConsoleLogOpen(false);
-//            Log.appenderOpen(Xlog.LEVEL_INFO, Xlog.AppednerModeAsync, cachePath, logPath, "XLOGSAMPLE", 0);
+            Log.setConsoleLogOpen(false);
+            Log.appenderOpen(Xlog.LEVEL_INFO, Xlog.AppednerModeAsync, cachePath, logPath, "XLOGSAMPLE", 0);
         }
         return true;
     }
 
     @Override
     public boolean d(String pattern, Object... params) {
-//        Log.d("", pattern);
+        Log.d("", pattern, params);
         return true;
     }
 
     @Override
     public boolean i(String pattern, Object... params) {
-//        Log.i("", pattern);
+        Log.i("", pattern, params);
         return true;
     }
 
     @Override
     public boolean w(String pattern, Object... params) {
-//        Log.w("", pattern);
+        Log.w("", pattern, params);
         return true;
     }
 
     @Override
     public boolean e(String pattern, Object... params) {
-//        Log.e("", pattern);
+        Log.e("", pattern, params);
         return true;
     }
 

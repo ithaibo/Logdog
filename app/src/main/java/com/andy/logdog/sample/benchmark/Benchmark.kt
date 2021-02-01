@@ -28,7 +28,6 @@ class Benchmark : AppCompatActivity() {
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
             for (i in 0 until  result.timesWrite) {
                 Logan.w(LocalMockLogRepository.apiResponse, 2)
-                Logan.f()
                 result.successTimes++
             }
             val end = System.currentTimeMillis()
@@ -90,7 +89,8 @@ class Benchmark : AppCompatActivity() {
             val start = System.currentTimeMillis()
             val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
             for (i in 0 until  result.timesWrite) {
-                XLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+                val success =XLogger.getInstance().d(LocalMockLogRepository.apiResponse)
+                if (success) result.successTimes++
             }
             val end = System.currentTimeMillis()
             result.timeCost = end - start
