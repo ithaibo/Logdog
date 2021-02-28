@@ -5,13 +5,43 @@
 #ifndef LOGDOG_TIMETRACE_H
 #define LOGDOG_TIMETRACE_H
 
+#include <vector>
+
+static long index = 0;
+
+enum ActionId {
+    zip = 0,
+    encrypt,
+    protocol,
+    serialize,
+    unmap,
+    ftruncate,
+    mmap,
+    saveBuffer
+};
+
+template <class T, class T2> class Pair {
+public:
+    T first;
+    T2 second;
+    Pair(T t, T2 t2) {
+       first = t;
+       second = t2;
+    }
+};
 
 class TimeTrace {
-private:
-    int times;
-    long long initCost;
-    long long openFile;
-    long long mmap;
+public:
+    /**timestamp start*/
+    unsigned long long timestamp;
+    /**time cost records*/
+    std::vector<Pair<ActionId, unsigned long long >> timeCostVector;
+
+    /**flush all records to file*/
+    void flush2File();
+
+    /**clear all trace info*/
+    void reset();
 };
 
 

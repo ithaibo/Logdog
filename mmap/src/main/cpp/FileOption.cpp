@@ -54,6 +54,7 @@ int FileOption::openFdForMMAP(const char *path) {
 
 std::string FileOption::readFileAll(const char *filePath) {
     std::string readResult;
+    LOGD("[FileOptions] read all file, result address:%d", (&readResult));
     int fd = open(filePath, O_RDONLY);
     if(fd < 0) {
         return readResult;
@@ -77,7 +78,7 @@ std::string FileOption::readFileAll(const char *filePath) {
 }
 
 void FileOption::writeFile(std::string &path, void *data) {
-    int fd = open(path.c_str(), O_RDWR|O_CREAT, (mode_t)0600);
+    int fd = open(path.c_str(), O_CREAT|O_APPEND, (mode_t)0600);
     if(fd < 0) {
         return;
     }

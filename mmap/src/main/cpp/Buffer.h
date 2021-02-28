@@ -60,7 +60,9 @@ protected:
     /**file descriptor: file not open*/
     int fd = FD_NOT_OPEN;
     /**file path to save log */
-    const char* filePath;
+    const char* cachePath;
+
+    std::string logPath;
 
     /**当前文件的大小*/
     size_t fileSize = 0;

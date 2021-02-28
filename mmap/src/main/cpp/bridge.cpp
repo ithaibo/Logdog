@@ -69,10 +69,23 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
  * @return
  */
 static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring content) {
+    if(!MmapMain::trace) {
+        MmapMain::trace = new TimeTrace();
+    } else {
+        //todo save to file
+
+        // reset
+        MmapMain::trace->reset();
+    }
     const char *content_chars = env->GetStringUTFChars(content, JNI_FALSE);
     unsigned long long timestart = getTimeUSDNow();
+    MmapMain::trace->timestamp = timestart;
     bool saveResult;
     saveResult = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
+
+    //todo all done
+    MmapMain::trace->flush2File();
+
     unsigned long long timeend = getTimeUSDNow();
     LOGI("[bridge] time cost 10000 write:%llu", (timeend - timestart));
     env->ReleaseStringUTFChars(content, content_chars);
@@ -95,7 +108,7 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
     }
     FileOption fileOption;
     string readFromFile = fileOption.readFileAll(bufferStatic->getFilePath());
-    LOGD("[bridge] read file done");
+    LOGD("[bridge] read file done, string address:%d", &readFromFile);
     if (readFromFile.empty()) {
         return nullptr;
     }

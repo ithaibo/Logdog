@@ -9,19 +9,22 @@
 #include <android/log.h>
 #include <cstdio>
 #include <iostream>
+#include <vector>
+#include <unistd.h>
+
+#include <zlib.h>
 
 #include "alog.h"
 #include "FileOption.h"
 #include "Buffer.h"
-#include <unistd.h>
 #include "compress/Zip.h"
-#include <zlib.h>
 
 #include "log_protocol.h"
 #include "config.h"
 #include "utils.h"
 #include "log_type.h"
-#include <vector>
+
+#include "TimeTrace.h"
 
 using namespace std;
 
@@ -29,6 +32,8 @@ using namespace std;
 
 class MmapMain {
 public:
+    static TimeTrace *trace;
+
     static Buffer *createBuffer(const char *path);
 
     static bool mmapWrite(Buffer *buffer, const char *content_chars);

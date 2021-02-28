@@ -15,8 +15,8 @@ public class XLogger implements ILogger {
         return H.instance;
     }
     static {
-        System.loadLibrary("c++_shared");
-        System.loadLibrary("marsxlog");
+//        System.loadLibrary("c++_shared");
+//        System.loadLibrary("marsxlog");
     }
 
 

@@ -17,7 +17,8 @@
 #include "Buffer.h"
 #include "alog.h"
 #include "FileOption.h"
-
+#include "utils.h"
+#include "MmapMain.h"
 
 //typedef struct timeval TimeVal;
 
@@ -46,8 +47,10 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
     int copyTimes = 0;
     int bufferCreateTimes = 0;
     size_t saved;
+    unsigned long long start, end;
     while (lengthToSave > 0) {
         if (lengthOff > 0) {
+            start = getTimeUSDNow();
             saved = lengthToSave > lengthOff? lengthOff : lengthToSave;
 //            LOGD("[Buffer-append] to copy, length:%d, content:%s", saved, temp);
             memcpy(bufferInternal + actualSize, temp, saved);
@@ -56,6 +59,9 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
             actualSize += saved;
             lengthToSave -= saved;
             lengthOff -= saved;
+            end = getTimeUSDNow();
+            Pair<ActionId, unsigned long long > save(ActionId::saveBuffer, end -start);
+            MmapMain::trace->timeCostVector.push_back(save);
 //            LOGD("[Buffer-append] after copy, lengthToSave:%zu, lengthOff:%zu", lengthToSave, lengthOff);
             continue;
         }
@@ -93,7 +99,7 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
 void Buffer::setFilePath(const char *path) {
     char *temp = new char[strlen(path)];
     memcpy(temp, path, strlen(path));
-    filePath = temp;
+    cachePath = temp;
 }
 
 
@@ -108,24 +114,38 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
 
+    unsigned long long start, end;
     //unmap memory
+    start = getTimeUSDNow();
     if(nullptr != bufferInternal && munmap(bufferInternal, BUFFER_UNIT_SIZE) != 0) {
         LOGE("[Buffer] release old buffer failed");
         return false;
     }
+    end = getTimeUSDNow();
+    Pair<ActionId, unsigned long long > unmap(ActionId::unmap, end -start);
+    MmapMain::trace->timeCostVector.push_back(unmap);
 
     //set file size
+    start = end;
     if(ftruncate(fd, static_cast<off_t>(fileSize + BUFFER_UNIT_SIZE)) != 0) {
         LOGE("[Buffer] extend file size failed");
         fileSize = sizeOld;
         return false;
     }
+    end = getTimeUSDNow();
+    Pair<ActionId, unsigned long long > ftruncate(ActionId::ftruncate, end -start);
+    MmapMain::trace->timeCostVector.push_back(ftruncate);
+
+    start = end;
     fileSize += BUFFER_UNIT_SIZE;
     bufferInternal = (uint8_t *)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
     if(bufferInternal == MAP_FAILED) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
     }
+    end = getTimeUSDNow();
+    Pair<ActionId, unsigned long long > mmap(ActionId::mmap, end -start);
+    MmapMain::trace->timeCostVector.push_back(mmap);
 
 //    gettimeofday(&timeEnd, nullptr);
 //    LOGI("[Buffer-createNewBuffer] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
@@ -144,11 +164,11 @@ void Buffer::initFile() {
     //if file not exists，create it
     //file exists，get size of it
     FileOption fileOption;
-    this->fd = fileOption.openFdForMMAP(this->filePath);
+    this->fd = fileOption.openFdForMMAP(this->cachePath);
     if(this->fd == -1) {
         return;
     }
-    size_t fileSizeNow = fileOption.obtainFileSize(this->filePath);
+    size_t fileSizeNow = fileOption.obtainFileSize(this->cachePath);
 
     //file size <0, obtain fd for writing and return.
     if (fileSizeNow <= 0) {
@@ -228,5 +248,5 @@ bool Buffer::isInit() {
 
 
 const char *Buffer::getFilePath() {
-    return filePath;
+    return cachePath;
 }

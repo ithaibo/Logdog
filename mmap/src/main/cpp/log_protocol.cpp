@@ -29,6 +29,7 @@ Header LogProtocol::createLogHeader(uint32_t type, unsigned long crc32, std::str
 
 HbLog LogProtocol::createLogItem(std::string &logContent, size_t lengthBody) {
     HbLog log;
+    LOGD("createLogItem invoked, log addr:%d", &log);
     log.body.content = std::move(logContent);
     unsigned long crc = crc32(0L, (Bytef*)log.body.content.data(), lengthBody);
     std::string emptyOther;

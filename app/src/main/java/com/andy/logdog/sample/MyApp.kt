@@ -32,7 +32,7 @@ class MyApp : MultiDexApplication() {
         app = this
         initLogdog()
         initSyncLog()
-        initXLog()
+//        initXLog()
         initLogan()
     }
 
