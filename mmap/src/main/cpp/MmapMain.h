@@ -32,7 +32,14 @@ using namespace std;
 
 class MmapMain {
 public:
-    static TimeTrace *trace;
+
+    static LogTrace::TimeTrace *getTrace() {
+        static LogTrace::TimeTrace *timeTrace;
+        if(!timeTrace) {
+            timeTrace = new LogTrace::TimeTrace();
+        }
+        return timeTrace;
+    }
 
     static Buffer *createBuffer(const char *path);
 

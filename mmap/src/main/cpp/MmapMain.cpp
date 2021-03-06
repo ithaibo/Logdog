@@ -30,8 +30,8 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
         int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
                                     Z_BEST_COMPRESSION);
         end = getTimeUSDNow();
-        Pair<ActionId, unsigned long long > zip(ActionId::zip, end -start);
-        MmapMain::trace->timeCostVector.push_back(zip);
+        LogTrace::Pair<LogTrace::ActionId, unsigned long long > zip(LogTrace::ActionId::zip, end -start);
+        MmapMain::getTrace()->timeCostVector.push_back(zip);
         if(Z_OK != codeCompress) {
             LOGE("[mmap] compress failed");
             return false;
@@ -44,8 +44,8 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     start = getTimeUSDNow();
     HbLog log = LogProtocol::createLogItem(compressedStr, lengthAfterCompress);
     end = getTimeUSDNow();
-    Pair<ActionId, unsigned long long > protocol(ActionId::protocol, end -start);
-    MmapMain::trace->timeCostVector.push_back(protocol);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(LogTrace::ActionId::protocol, end -start);
+    MmapMain::getTrace()->timeCostVector.push_back(protocol);
     LOGD("return fro, createLogItem invoked, log addr:%d", &log);
     printLog(log);
 
@@ -53,8 +53,8 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     start = getTimeUSDNow();
     uint8_t *toSave = LogProtocol::serialize(log);
     end = getTimeUSDNow();
-    Pair<ActionId, unsigned long long > serialize(ActionId::serialize, end -start);
-    MmapMain::trace->timeCostVector.push_back(serialize);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > serialize(LogTrace::ActionId::serialize, end -start);
+    MmapMain::getTrace()->timeCostVector.push_back(serialize);
     //save
     bool resultAppend = buffer->append(toSave, log.logLength);
     //clear up

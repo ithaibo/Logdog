@@ -79,7 +79,7 @@ inline void printLogHeader(const Header *header) {
     try {
         LOGD("[protocol] log print, header.magic:%s", header->magic);
         LOGD("[protocol] log print, header.headerLen:%d", header->headerLen);
-        LOGD("[protocol] log print, header.timestamp:%llu", header->timestamp);
+        LOGD("[protocol] log print, header.timestamp:%lu", header->timestamp);
         LOGD("[protocol] log print, header.version:%d", header->version);
         LOGD("[protocol] log print, header.encrypt:%d", header->encrypt);
         LOGD("[protocol] log print, header.zip:%d", header->zip);

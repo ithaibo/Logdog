@@ -7,42 +7,44 @@
 
 #include <vector>
 
-static long index = 0;
+namespace LogTrace {
 
-enum ActionId {
-    zip = 0,
-    encrypt,
-    protocol,
-    serialize,
-    unmap,
-    ftruncate,
-    mmap,
-    saveBuffer
-};
+    enum ActionId {
+        zip = 0,
+        encrypt,
+        protocol,
+        serialize,
+        unmap,
+        TRUNCATE,
+        map,
+        saveBuffer
+    };
 
-template <class T, class T2> class Pair {
-public:
-    T first;
-    T2 second;
-    Pair(T t, T2 t2) {
-       first = t;
-       second = t2;
-    }
-};
+    template<class T, class T2>
+    class Pair {
+    public:
+        T first;
+        T2 second;
 
-class TimeTrace {
-public:
-    /**timestamp start*/
-    unsigned long long timestamp;
-    /**time cost records*/
-    std::vector<Pair<ActionId, unsigned long long >> timeCostVector;
+        Pair(T t, T2 t2) {
+            first = t;
+            second = t2;
+        }
+    };
 
-    /**flush all records to file*/
-    void flush2File();
+    class TimeTrace {
+    public:
+        /**timestamp start*/
+        unsigned long long timestamp;
+        /**time cost records*/
+        std::vector<Pair<ActionId, unsigned long long >> timeCostVector;
 
-    /**clear all trace info*/
-    void reset();
-};
+        /**flush all records to file*/
+        void flush2File();
 
+        /**clear all trace info*/
+        void reset();
+    };
 
+}
 #endif //LOGDOG_TIMETRACE_H

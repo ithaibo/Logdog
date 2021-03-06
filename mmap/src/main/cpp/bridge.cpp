@@ -69,22 +69,14 @@ static jlong createBuffer(JNIEnv *env, jobject obj, jstring jpath) {
  * @return
  */
 static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring content) {
-    if(!MmapMain::trace) {
-        MmapMain::trace = new TimeTrace();
-    } else {
-        //todo save to file
-
-        // reset
-        MmapMain::trace->reset();
-    }
     const char *content_chars = env->GetStringUTFChars(content, JNI_FALSE);
     unsigned long long timestart = getTimeUSDNow();
-    MmapMain::trace->timestamp = timestart;
+    MmapMain::getTrace()->timestamp = timestart;
     bool saveResult;
     saveResult = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
 
     //todo all done
-    MmapMain::trace->flush2File();
+    MmapMain::getTrace()->flush2File();
 
     unsigned long long timeend = getTimeUSDNow();
     LOGI("[bridge] time cost 10000 write:%llu", (timeend - timestart));

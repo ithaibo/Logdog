@@ -60,8 +60,8 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
             lengthToSave -= saved;
             lengthOff -= saved;
             end = getTimeUSDNow();
-            Pair<ActionId, unsigned long long > save(ActionId::saveBuffer, end -start);
-            MmapMain::trace->timeCostVector.push_back(save);
+            LogTrace::Pair<LogTrace::ActionId, unsigned long long > save(LogTrace::ActionId::saveBuffer, end -start);
+            MmapMain::getTrace()->timeCostVector.push_back(save);
 //            LOGD("[Buffer-append] after copy, lengthToSave:%zu, lengthOff:%zu", lengthToSave, lengthOff);
             continue;
         }
@@ -122,8 +122,8 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
     end = getTimeUSDNow();
-    Pair<ActionId, unsigned long long > unmap(ActionId::unmap, end -start);
-    MmapMain::trace->timeCostVector.push_back(unmap);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > unmap(LogTrace::ActionId::unmap, end -start);
+    MmapMain::getTrace()->timeCostVector.push_back(unmap);
 
     //set file size
     start = end;
@@ -133,8 +133,8 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
     end = getTimeUSDNow();
-    Pair<ActionId, unsigned long long > ftruncate(ActionId::ftruncate, end -start);
-    MmapMain::trace->timeCostVector.push_back(ftruncate);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > trace_ftruncate(LogTrace::ActionId::TRUNCATE, end - start);
+    MmapMain::getTrace()->timeCostVector.push_back(trace_ftruncate);
 
     start = end;
     fileSize += BUFFER_UNIT_SIZE;
@@ -144,8 +144,8 @@ bool Buffer::createNewBuffer(off_t startOff) {
         return false;
     }
     end = getTimeUSDNow();
-    Pair<ActionId, unsigned long long > mmap(ActionId::mmap, end -start);
-    MmapMain::trace->timeCostVector.push_back(mmap);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > mmap(LogTrace::ActionId::map, end -start);
+    MmapMain::getTrace()->timeCostVector.push_back(mmap);
 
 //    gettimeofday(&timeEnd, nullptr);
 //    LOGI("[Buffer-createNewBuffer] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));

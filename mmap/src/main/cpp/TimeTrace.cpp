@@ -4,9 +4,9 @@
 
 #include "TimeTrace.h"
 
-void TimeTrace::flush2File() {
+void LogTrace::TimeTrace::flush2File() {
 }
 
-void TimeTrace::reset() {
+void LogTrace::TimeTrace::reset() {
     timeCostVector.clear();
 }
