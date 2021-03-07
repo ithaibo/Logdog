@@ -8,12 +8,12 @@
 
 #include <zlib.h>
 #include <string>
-
+#include "../buffer/ByteBuffer.h"
 
 int compress(const uint8_t* inString, size_t inLength,
-             std::string& out_str, int level);
+             ByteBuffer& out_str, int level);
 
 int decompress(const uint8_t* str2Decompress, size_t length2Decompress,
-               std::string& outStr);
+               ByteBuffer &outStr);
 
 #endif //LOGDOG_ZIP_H

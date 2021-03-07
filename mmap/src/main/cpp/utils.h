@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "alog.h"
 #include <time.h>
+#include <vector>
 
 inline uint64_t getTimeStamp() {
     timeval time;
@@ -57,6 +58,55 @@ inline uint32_t charsToUint32(const char *byteArr) {
     result |= ((byteArr[2] << 16) & 0xFF0000);
     result |= ((byteArr[3] << 24) & 0xFF000000);
     return result;
+}
+
+inline bool isLittleEnd() {
+    constexpr uint16_t u_flag = 1;
+    return 1 == (*(uint8_t *)&u_flag);
+}
+
+/**
+ * 字符串翻转（可用于字节序转换）
+ */
+inline void reverse(uint8_t *input, int len) {
+    if (!input || len <= 1) return;
+    uint8_t *temp = (uint8_t *)calloc(len, sizeof(uint8_t));
+    for (int i = 0; i < len; ++i) {
+        temp[i] = input[len - 1 -i];
+    }
+    memcpy(input, temp, len);
+    free(temp);
+}
+
+
+inline std::string format_string(const char* format, va_list args) {
+    constexpr size_t oldlen = BUFSIZ;
+    char buffer[oldlen];  // 默认栈上的缓冲区
+    va_list argscopy;
+    va_copy(argscopy, args);
+    size_t newlen = vsnprintf(&buffer[0], oldlen, format, args) + 1;
+    newlen++;  // 算上终止符'\0'
+    if (newlen > oldlen) {  // 默认缓冲区不够大，从堆上分配
+        std::vector<char> newbuffer(newlen);
+        vsnprintf(newbuffer.data(), newlen, format, argscopy);
+        return newbuffer.data();
+    }
+    return buffer;
+}
+
+inline std::string format_string(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    auto s = format_string(format, args);
+    va_end(args);
+
+    return s;
+}
+
+inline bool isLittleEndian() {
+    const uint16_t us_flag = 1;
+    // little_end_flag 表示主机字节序是否小端字节序
+    return *((uint8_t*)&us_flag) == 1;
 }
 
 #endif //LOGDOG_UTILS_H

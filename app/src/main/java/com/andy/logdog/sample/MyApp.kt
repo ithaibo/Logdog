@@ -40,6 +40,9 @@ class MyApp : MultiDexApplication() {
     private fun initLogdog() {
         val file = File(this.getExternalFilesDir(null), "logdog")
         val path = file.absolutePath
+        if (!file.exists()) {
+            file.mkdirs()
+        }
         Logdog.getInstance().init(path)
     }
 

@@ -48,7 +48,7 @@ struct Header {
  * 日志内容（可能是压缩、加密后的）
  */
 struct Body {
-    std::string content;
+    uint8_t *content;
 };
 
 /**
@@ -97,12 +97,12 @@ inline void printLogHeader(const Header *header) {
 }
 
 inline void printLog(const HbLog &log) {
-    if (!LOG_PRINT) return;
+//    if (!LOG_PRINT) return;
     if (log.logLength <= 0) return;
     printLogHeader(&log.header);
-    if (!log.body.content.empty()) {
-//        LOGD("[protocol] log print, body.content:%s", log->body->content);
-    }
+//    if (!log.body.content.empty()) {
+//        LOGD("[protocol] log print, body.content:%s", log.body.content.c_str());
+//    }
 }
 
 class LogProtocol {
@@ -122,14 +122,7 @@ public:
      * @param logContent 日志内容
      * @param lengthBody 内容长度
      */
-    static HbLog createLogItem(std::string &logContent, size_t lengthBody);
-
-    /**
-     * 数据序列化
-     * @param log
-     * @return
-     */
-    static uint8_t *serialize(const HbLog &log);
+    static HbLog createLogItem(uint8_t *logContent, size_t lengthBody);
 
     static std::vector<LogRegionNeedParse> parseAllMagicPosition(std::string &str);
 

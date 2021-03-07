@@ -27,58 +27,15 @@ Header LogProtocol::createLogHeader(uint32_t type, unsigned long crc32, std::str
     return header;
 }
 
-HbLog LogProtocol::createLogItem(std::string &logContent, size_t lengthBody) {
+HbLog LogProtocol::createLogItem(uint8_t *logContent, size_t lengthBody) {
     HbLog log;
-    log.body.content = std::move(logContent);
-    unsigned long crc = crc32(0L, (Bytef*)log.body.content.data(), lengthBody);
+    log.body.content = logContent;//
+    unsigned long crc = crc32(0L, (Bytef*)log.body.content, lengthBody);
     std::string emptyOther;
     log.header = createLogHeader(LogType::E2E, crc, emptyOther, lengthBody);
+    LOGD("[protocol] body length:%d", lengthBody);
     log.logLength = calculateHeaderLength() + log.header.otherLen + log.header.bodyLen;
     return log;
-}
-
-/**
- * 将HbLog序列化为字节数组
- * @param log log
- * @return 字节数组
- */
-uint8_t* LogProtocol::serialize(const HbLog &log) {
-    if (log.body.content.empty()) return nullptr;
-    auto *temp = new uint8_t[log.logLength];
-    uint32_t off = 0;
-    memcpy(temp + off, log.header.magic, LEN_HEADER_MAGIC);
-    off += LEN_HEADER_MAGIC;
-    memcpy(temp + off, &log.header.headerLen, LEN_HEADER_HEADERLEN);
-    off += LEN_HEADER_HEADERLEN;
-    memcpy(temp + off, &log.header.timestamp, LEN_HEADER_TIMESTAMP);
-    off += LEN_HEADER_TIMESTAMP;
-    memcpy(temp + off, &log.header.version, LEN_HEADER_VERSION);
-    off += LEN_HEADER_VERSION;
-    memcpy(temp + off, &log.header.encrypt, LEN_HEADER_ENCRYPT);
-    off += LEN_HEADER_ENCRYPT;
-    memcpy(temp + off, &log.header.zip, LEN_HEADER_ZIP);
-    off += LEN_HEADER_ZIP;
-    memcpy(temp + off, &log.header.type, LEN_HEADER_TYPE);
-    off += LEN_HEADER_TYPE;
-    memcpy(temp + off, &log.header.crc32, LEN_HEADER_CRC32);
-    off += LEN_HEADER_CRC32;
-    memcpy(temp + off, &log.header.otherLen, LEN_HEADER_OTHERLEN);
-    off += LEN_HEADER_OTHERLEN;
-    if (!log.header.other.empty() && log.header.otherLen > 0) {
-        memcpy(temp + off, log.header.other.data(), log.header.otherLen);
-        off += log.header.otherLen;
-    }
-    memcpy(temp + off, &log.header.bodyLen, LEN_HEADER_BODYLEN);
-    off += LEN_HEADER_BODYLEN;
-
-    //body
-    if (!log.body.content.empty()) {
-        memcpy(temp + off, log.body.content.data(), log.header.bodyLen);
-    } else {
-        LOGD("[debug] body or content is null");
-    }
-
-    return temp;
 }
 
 HbLog LogProtocol::parseOneLog(std::string &rawStr, LogRegionNeedParse positionAndLength) {
@@ -131,11 +88,16 @@ HbLog LogProtocol::parseOneLog(std::string &rawStr, LogRegionNeedParse positionA
         if (!crcMatch) {
             return parsedLog;
         }
-        int codeDecompress = decompress(toParse + off, header->bodyLen, parsedLog.body.content);
+        ByteBuffer byteBuffer(64);
+        int codeDecompress = decompress(toParse + off, header->bodyLen, byteBuffer);
         if (Z_OK != codeDecompress) {
             LOGE("[mmap] decompress log body failed");
         }
-        parsedLog.header.bodyLen = parsedLog.body.content.length();
+        if (byteBuffer.getSize() > 0) {
+            parsedLog.body.content = new uint8_t[byteBuffer.getSize()];
+            memcpy(parsedLog.body.content, byteBuffer.getData(), byteBuffer.getSize());
+            parsedLog.header.bodyLen = byteBuffer.getSize();
+        }
     }
     return parsedLog;
 }

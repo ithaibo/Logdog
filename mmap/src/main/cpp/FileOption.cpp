@@ -77,16 +77,12 @@ std::string FileOption::readFileAll(const char *filePath) {
     return readResult;
 }
 
-void FileOption::writeFile(std::string &path, void *data) {
-    int fd = open(path.c_str(), O_CREAT|O_APPEND, (mode_t)0600);
-    if(fd < 0) {
-        return;
-    }
-    uint8_t buffer[4096];
-    size_t n;
-    size_t off;
-    while ((n = write(fd, data, 4096)) > 0) {
-        off += n;
-    }
-    close(fd);
+void FileOption::writeFile(const char * path, uint8_t *data, const size_t length) {
+    if (!path) return;
+    if (!data || 0 >= length) return;
+    FILE *file = fopen(path, "ab+");
+    size_t lenWrite = fwrite(data, sizeof(uint8_t), length, file);
+    LOGD("[FileOptions] length write:%d", lenWrite);
+    fflush(file);
+    fclose(file);
 }

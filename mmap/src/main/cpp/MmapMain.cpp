@@ -4,6 +4,7 @@
 
 #include "MmapMain.h"
 #include "FileOption.h"
+#include "interceptor/DefaultSerializer.h"
 
 #include <iostream>
 #include <fstream>
@@ -21,44 +22,56 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     int length = strlen(content_chars);
 
     //compress
-    string compressedStr;
+    ByteBuffer compressedStr(64);
     int lengthAfterCompress;
 
     unsigned long long start, end;
     if(COMPRESS) {
         start = getTimeUSDNow();
-        int codeCompress = compress((uint8_t *) content_chars, length, compressedStr,
-                                    Z_BEST_COMPRESSION);
+        int codeCompress = compress((uint8_t *) content_chars,
+                length,
+                compressedStr,
+                Z_BEST_COMPRESSION);
         end = getTimeUSDNow();
-        LogTrace::Pair<LogTrace::ActionId, unsigned long long > zip(LogTrace::ActionId::zip, end -start);
+        LogTrace::Pair<LogTrace::ActionId, unsigned long long > zip(
+                LogTrace::ActionId::zip, end -start);
         MmapMain::getTrace()->timeCostVector.push_back(zip);
         if(Z_OK != codeCompress) {
             LOGE("[mmap] compress failed");
             return false;
         }
-        lengthAfterCompress = compressedStr.length();
+        lengthAfterCompress = compressedStr.getSize();
+        LOGI("[MapMain] length after compressed:%d", lengthAfterCompress);
     } else {
-        compressedStr = string(content_chars);
+        compressedStr.append(
+                reinterpret_cast<const uint8_t *>(content_chars),
+                length);
         lengthAfterCompress = length;
     }
     start = getTimeUSDNow();
-    HbLog log = LogProtocol::createLogItem(compressedStr, lengthAfterCompress);
+    HbLog log = LogProtocol::createLogItem(compressedStr.getData(),
+            lengthAfterCompress);
     end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(LogTrace::ActionId::protocol, end -start);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(
+            LogTrace::ActionId::protocol,
+            end -start);
     MmapMain::getTrace()->timeCostVector.push_back(protocol);
     LOGD("return fro, createLogItem invoked, log addr:%d", &log);
     printLog(log);
 
     //serialize
     start = getTimeUSDNow();
-    uint8_t *toSave = LogProtocol::serialize(log);
+    DefaultSerializer serializer;
+    uint8_t *toSave = serializer.visit(&log);
     end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > serialize(LogTrace::ActionId::serialize, end -start);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > serialize(
+            LogTrace::ActionId::serialize,
+            end -start);
     MmapMain::getTrace()->timeCostVector.push_back(serialize);
+    LOGW("[MapMain] all prepare done!");
     //save
-    bool resultAppend = buffer->append(toSave, log.logLength);
-    //clear up
-    delete []toSave;
+    bool resultAppend = true;
+//  todo  resultAppend = buffer->append(toSave, log.logLength);
     return resultAppend;
 }
 

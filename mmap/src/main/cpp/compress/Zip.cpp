@@ -11,9 +11,9 @@
 #define ZIP true
 
 int compress(const uint8_t *inString, size_t inLength,
-             std::string &out_str, int level) {
+             ByteBuffer &out_str, int level) {
     if (!ZIP) {
-        out_str.append((const char *)inString, inLength);
+        out_str.append(inString, inLength);
         return Z_OK;
     }
 
@@ -57,7 +57,7 @@ int compress(const uint8_t *inString, size_t inLength,
                 break;
             }
             have = CHUNK - stream.avail_out;
-            out_str.append((const char*)out, have);
+            out_str.append((const uint8_t *)out, have);
         } while (stream.avail_out == 0);
         if (stream.avail_in != 0) break; /// all input will be used
     } while (flush != Z_FINISH); /// done when last data in file processed
@@ -69,9 +69,9 @@ int compress(const uint8_t *inString, size_t inLength,
 }
 
 int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
-               std::string& outStr) {
+               ByteBuffer &outStr) {
     if (!ZIP) {
-        outStr.append((const char *)str2Decompress, length2Decompress);
+        outStr.append(str2Decompress, length2Decompress);
         return Z_OK;
     }
 
@@ -128,7 +128,7 @@ int decompress(const uint8_t *str2Decompress, size_t length2Decompress,
             }
 
             have = CHUNK - stream.avail_out;
-            outStr.append((const char*)out, have);
+            outStr.append(out, have);
         }while (stream.avail_out == 0);
         /// done when inflate() says it's done
     } while (flush != Z_FINISH);

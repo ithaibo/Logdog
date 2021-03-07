@@ -2,6 +2,7 @@ package com.andy.logdog.sample.benchmark
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import com.andy.logdog.sample.logdog.Logdog
 import com.andy.note.R
 import com.dianping.logan.Logan
@@ -41,24 +42,24 @@ class Benchmark : AppCompatActivity() {
     }
 
     fun testMmap() {
-        val logdogThread = Thread{
+//        val logdogThread = Thread{
             val result = Result()
             result.timesWrite = readTimes()
-            val start = System.currentTimeMillis()
-            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
+//            val start = System.currentTimeMillis()
+//            val lengthContent = LocalMockLogRepository.apiResponse.length.toLong()
             for (i in 0 until  result.timesWrite) {
                 val success = Logdog.getInstance().d(LocalMockLogRepository.apiResponse)
                 if (success) result.successTimes++
             }
-            val end = System.currentTimeMillis()
-            result.timeCost = end - start
-            result.contentLength = lengthContent
-            result.writeType = "mmap"
-
-            tv_mmap.post { tv_mmap.text = result.toString() }
-        }
-        logdogThread.name = "Logdog"
-        logdogThread.start()
+//            val end = System.currentTimeMillis()
+//            result.timeCost = end - start
+//            result.contentLength = lengthContent
+//            result.writeType = "mmap"
+            Log.i("Benchmark", "all done!")
+//            tv_mmap.post { tv_mmap.text = result.toString() }
+//        }
+//        logdogThread.name = "Logdog"
+//        logdogThread.start()
     }
 
     fun testSyncIO() {

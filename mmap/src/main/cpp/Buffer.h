@@ -12,7 +12,7 @@
 #include <memory>
 #include "alog.h"
 
-class Buffer {
+class Buffer  {
 
 public:
     static Buffer& get_instance(const char* path) {
@@ -29,7 +29,9 @@ public:
 
     Buffer();
 
-    bool isInit();
+    ~Buffer();
+
+    bool isInit() const;
     inline void doInit(const char* path) {
         setFilePath(path);
         initFile();
@@ -49,6 +51,10 @@ public:
     void onExit();
 
 protected:
+    const int POSITION_LENGTH = 0;
+    const int POSITION_TIMESTAMP = 4;
+    const int POSITION_DATA = 12;
+
     static const int FD_NOT_OPEN = -1;
     const size_t DEFAULT_BUFFER_SIZE = 64 * (size_t)getpagesize(); //256
     /**size of buffer*/
@@ -63,10 +69,9 @@ protected:
     const char* cachePath;
 
     std::string logPath;
+    std::string logDir;
 
-    /**当前文件的大小*/
-    size_t fileSize = 0;
-
+    uint64_t timestampUpdate;
     /**当前文件写入内容的大小*/
     size_t actualSize = 0;
 
@@ -74,6 +79,35 @@ protected:
 
 private:
     void initFile();
+    /**
+     * 从buffer中解析出数据长度
+     * @return 数据长度
+     */
+    size_t parseDaraLength();
+    /**
+     * 从buffer中解析出数据的更新时间
+     * @return 数据更新时间戳
+     */
+    uint64_t parseTimestamp();
+    /**
+     * 数据刷入到文件中
+     */
+    void flush();
+    /**
+     * 获取当前缓冲区的可用空间
+     * @return 缓冲区可用空间长度
+     */
+    size_t remain() const;
+    /**
+     * 更新数据长度到Buffer
+     * @param length 数据长度
+     */
+    void updateDataLength(size_t length);
+    /**
+     * 更新时间戳到Buffer
+     * @param timestamp 时间戳
+     */
+    void updateTimestamp(uint64_t timestamp);
 
 protected:
     /**
@@ -81,7 +115,7 @@ protected:
      * @param startOff 偏移位置
      * @return 是否成功
      */
-    bool createNewBuffer(off_t startOff);
+    bool createNewBuffer();
 };
 
 #endif //LOGDOG_BUFFER_H

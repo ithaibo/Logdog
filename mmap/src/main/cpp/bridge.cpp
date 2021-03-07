@@ -73,14 +73,17 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
     unsigned long long timestart = getTimeUSDNow();
     MmapMain::getTrace()->timestamp = timestart;
     bool saveResult;
+
+    LOGD("[bridge], is little endian:%d", isLittleEnd());
     saveResult = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
 
     //todo all done
-    MmapMain::getTrace()->flush2File();
+//    MmapMain::getTrace()->flush2File();
 
-    unsigned long long timeend = getTimeUSDNow();
-    LOGI("[bridge] time cost 10000 write:%llu", (timeend - timestart));
+//    unsigned long long timeEnd = getTimeUSDNow();
+//    LOGI("[bridge] time cost write:%llu", (timeEnd - timestart));
     env->ReleaseStringUTFChars(content, content_chars);
+    LOGW("[bridge] mmap wirte done, release arguments success.");
     return saveResult;
 }
 
@@ -111,9 +114,9 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
     string temp;
     for_each(allMagicPos.begin(), allMagicPos.end(), [&](LogRegionNeedParse serializedLog) {
         HbLog parsedLog = LogProtocol::parseOneLog(readFromFile, serializedLog);
-        if (parsedLog.logLength > 0 && !parsedLog.body.content.empty()) {
+        if (parsedLog.logLength > 0 && parsedLog.header.bodyLen > 0) {
             printLog(parsedLog);
-            temp.append(parsedLog.body.content);
+            temp.append((const char *)parsedLog.body.content);
             temp.append("\n");
         }
     });

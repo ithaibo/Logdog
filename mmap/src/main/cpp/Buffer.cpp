@@ -20,233 +20,185 @@
 #include "utils.h"
 #include "MmapMain.h"
 
-//typedef struct timeval TimeVal;
-
 Buffer::Buffer(size_t bufferSize) {
     this->BUFFER_UNIT_SIZE = bufferSize;
 }
 
 Buffer::Buffer() {}
 
-bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
-//    TimeVal timeStart;
-//    gettimeofday(&timeStart, nullptr);
-
-    //当前的buffer中还剩余的空间
-    size_t lengthOff = BUFFER_UNIT_SIZE - actualSize;
-
-//    LOGD("[Buffer-append] invoked, lengthToSave: %zu", lengthToSave);
-//    LOGD("[Buffer-append] invoked, lengthOff: %zu", lengthOff);
-
-    //check fd
-    if(FD_NOT_OPEN == fd) {
-        return false;
-    }
-
-    const uint8_t *temp = content;
-    int copyTimes = 0;
-    int bufferCreateTimes = 0;
-    size_t saved;
-    unsigned long long start, end;
-    while (lengthToSave > 0) {
-        if (lengthOff > 0) {
-            start = getTimeUSDNow();
-            saved = lengthToSave > lengthOff? lengthOff : lengthToSave;
-//            LOGD("[Buffer-append] to copy, length:%d, content:%s", saved, temp);
-            memcpy(bufferInternal + actualSize, temp, saved);
-            copyTimes++;
-            temp += saved;
-            actualSize += saved;
-            lengthToSave -= saved;
-            lengthOff -= saved;
-            end = getTimeUSDNow();
-            LogTrace::Pair<LogTrace::ActionId, unsigned long long > save(LogTrace::ActionId::saveBuffer, end -start);
-            MmapMain::getTrace()->timeCostVector.push_back(save);
-//            LOGD("[Buffer-append] after copy, lengthToSave:%zu, lengthOff:%zu", lengthToSave, lengthOff);
-            continue;
-        }
-
-        if (lengthToSave <= 0) {
-            break;
-        }
-        //create new mapped buffer
-//        LOGD("[Buffer-append] invoked, extend buffer...");
-        if (!createNewBuffer(0)) {
-            LOGE("[Buffer-append] invoked, extend buffer failed");
-            return false;
-        }
-        bufferCreateTimes++;
-        actualSize = 0;
-        lengthOff = BUFFER_UNIT_SIZE;
-//        LOGD("[Buffer-append] invoked, extend buffer done, legnthToSave:%zu, lengthOff;%zu", lengthToSave, lengthOff);
-    }
-    if (actualSize > 0) {
-//        zeroFill(BUFFER_UNIT_SIZE - lengthOff, lengthOff);
-        bufferInternal[actualSize] = '\0';
-    }
-
-//    LOGD("[Buffer-append] invoked, all saved done, copyTimes:%d, bufferCreateTimes:%d", copyTimes, bufferCreateTimes);
-
-//    LOGD("[Buffer-append] success");
-//    TimeVal timeEnd;
-//    gettimeofday(&timeEnd, nullptr);
-//    LOGI("[Buffer-append] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
-    return true;
-}
-
-
-
-void Buffer::setFilePath(const char *path) {
-    char *temp = new char[strlen(path)];
-    memcpy(temp, path, strlen(path));
-    cachePath = temp;
-}
-
-
-bool Buffer::createNewBuffer(off_t startOff) {
-//    TimeVal timeStart;
-//    TimeVal timeEnd;
-//    gettimeofday(&timeStart, nullptr);
-
-    size_t sizeOld = fileSize;
-
-    if(fd == FD_NOT_OPEN) {
-        return false;
-    }
-
-    unsigned long long start, end;
-    //unmap memory
-    start = getTimeUSDNow();
-    if(nullptr != bufferInternal && munmap(bufferInternal, BUFFER_UNIT_SIZE) != 0) {
-        LOGE("[Buffer] release old buffer failed");
-        return false;
-    }
-    end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > unmap(LogTrace::ActionId::unmap, end -start);
-    MmapMain::getTrace()->timeCostVector.push_back(unmap);
-
-    //set file size
-    start = end;
-    if(ftruncate(fd, static_cast<off_t>(fileSize + BUFFER_UNIT_SIZE)) != 0) {
-        LOGE("[Buffer] extend file size failed");
-        fileSize = sizeOld;
-        return false;
-    }
-    end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > trace_ftruncate(LogTrace::ActionId::TRUNCATE, end - start);
-    MmapMain::getTrace()->timeCostVector.push_back(trace_ftruncate);
-
-    start = end;
-    fileSize += BUFFER_UNIT_SIZE;
-    bufferInternal = (uint8_t *)mmap(nullptr, BUFFER_UNIT_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, fd, startOff);
-    if(bufferInternal == MAP_FAILED) {
-        LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
-        return false;
-    }
-    end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > mmap(LogTrace::ActionId::map, end -start);
-    MmapMain::getTrace()->timeCostVector.push_back(mmap);
-
-//    gettimeofday(&timeEnd, nullptr);
-//    LOGI("[Buffer-createNewBuffer] invoked, time cost(suseconds):%ld", (timeEnd.tv_sec - timeStart.tv_sec) * 1000000 + (timeEnd.tv_usec - timeStart.tv_usec));
-    return true;
-}
-
-
-
 void Buffer::initFile() {
-    if(init && nullptr != bufferInternal) {
+    //init mmap buffer
+    if(!createNewBuffer()) {
         return;
     }
+    //parse data length
+    this->actualSize = parseDaraLength();
+    //parse last update time
+    this->timestampUpdate = parseTimestamp();
 
-//    LOGD("[Buffer] initFile invoked");
-
-    //if file not exists，create it
-    //file exists，get size of it
-    FileOption fileOption;
-    this->fd = fileOption.openFdForMMAP(this->cachePath);
-    if(this->fd == -1) {
-        return;
-    }
-    size_t fileSizeNow = fileOption.obtainFileSize(this->cachePath);
-
-    //file size <0, obtain fd for writing and return.
-    if (fileSizeNow <= 0) {
-        if(ftruncate(fd, static_cast<off_t>(BUFFER_UNIT_SIZE)) != 0) {
-            return;
-        }
-        fileSize = BUFFER_UNIT_SIZE;
-        actualSize = 0;
+    if(this->actualSize > 0) {
+        // flush to file
+        flush();
     } else {
-        fileSize = fileSizeNow;
+        this->off = this->actualSize + POSITION_DATA;
     }
-
-//    LOGD("[Buffer-initFile] file size: %zu, before create map memory", fileSize);
-
-    //do memory map
-    off_t startOff;
-    if (fileSize <= BUFFER_UNIT_SIZE) {
-        startOff = 0;
-    } else {
-        startOff = fileSize - BUFFER_UNIT_SIZE;
-    }
-    bufferInternal = (uint8_t *) mmap(nullptr, BUFFER_UNIT_SIZE, PROT_WRITE | PROT_READ, MAP_SHARED, this->fd, startOff);
-    if (bufferInternal == MAP_FAILED) {
-        bufferInternal = nullptr;
-        init = false;
-        LOGE("[Buffer-init] map file failed, reason: %s", strerror(errno));
-        return;
-    }
-    //correct actual size
-    for (int i = BUFFER_UNIT_SIZE -1 ; i >= 0; i--) {
-        if (bufferInternal[i] != '\0') {
-            actualSize = i+1;
-//            LOGD("[Buffer-init] correct actualSize: %zu, index:%d", actualSize, i);
-            break;
-        }
-
-    }
-
-    LOGD("[Buffer-initFile] file size: %zu, actualSize: %zu", fileSize, actualSize);
-//    if (actualSize < BUFFER_UNIT_SIZE) {
-//        bufferInternal[actualSize] = '\0';
-//    }
-//    LOGD("[Buffer-initFile] content read from map: %s", temp);
-    //release memory mapped
-    init = true;
+    this->init = true;
     LOGD("[Buffer-initFile] done");
 }
 
+bool Buffer::createNewBuffer() {
+    FileOption fileOption;
+    this->fd = fileOption.openFdForMMAP(this->cachePath);
+    if(this->fd == -1) {
+        return false;
+    }
+    if(ftruncate(fd, static_cast<off_t>(BUFFER_UNIT_SIZE)) != 0) {
+        return false;
+    }
+    this->bufferInternal = (uint8_t *) mmap(nullptr,
+                                            BUFFER_UNIT_SIZE,
+                                            PROT_READ | PROT_WRITE,
+                                            MAP_SHARED,
+                                            this->fd,
+                                            0);
+    if(this->bufferInternal == MAP_FAILED) {
+        LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
+        return false;
+    }
+    return true;
+}
 
+bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
+    if (!content) {
+        LOGE("[Buffer] content pointer is null");
+        return false;
+    }
+    if(!this->bufferInternal) {
+        LOGE("[Buffer] not init yet!");
+        return false;
+    }
+    const uint8_t *temp = content;
+    int copyTimes = 0;
+    size_t saved;
+    while (lengthToSave > 0) {
+        if (remain() > 0) {
+            saved = lengthToSave > remain()? remain() : lengthToSave;
+            memcpy(this->bufferInternal + this->off, temp, saved);
+            copyTimes++;
+            this->off += saved;
+            temp += saved;
+            this->actualSize += saved;
+            lengthToSave -= saved;
+            updateDataLength(actualSize);
+            this->timestampUpdate = getTimeStamp();
+            updateTimestamp(this->timestampUpdate);
+            continue;
+        }
+        if (lengthToSave <= 0) {
+            break;
+        }
+        LOGI("[Buffer-append] buffer full, flush data to file.");
+        flush();
+    }
+    return true;
+}
+
+void Buffer::setFilePath(const char *path) {
+    //cache path
+    std::string cachePath(path);
+    cachePath.append("/");
+    cachePath.append("cache");
+    LOGI("[Buffer] set file path, cache path:%s", cachePath.c_str());
+    char *temp = new char[cachePath.length()];
+    memcpy(temp, cachePath.c_str(), cachePath.length());
+    this->cachePath = temp;
+
+    //log dir
+    this->logDir.append(path);
+    //log file path
+    this->logPath = path;
+    this->logPath.append("/");
+    this->logPath.append(format_string("%ld.log", getTimeStamp()));
+}
 
 void Buffer::onExit() {
-    if(fd == FD_NOT_OPEN) return;
-    if(nullptr == bufferInternal || MAP_FAILED == bufferInternal) {
-        close(fd);
+    if(this->fd == FD_NOT_OPEN) return;
+    if(nullptr == bufferInternal || MAP_FAILED == this->bufferInternal) {
+        close(this->fd);
         return;
     }
-    if(0 != msync(bufferInternal, fileSize, MS_SYNC)) {
+    if(0 != msync(this->bufferInternal, BUFFER_UNIT_SIZE, MS_SYNC)) {
         LOGE("sync failed");
-        close(fd);
+        close(this->fd);
         return;
     }
-    if(-1 == munmap(bufferInternal, fileSize)) {
+    if(-1 == munmap(this->bufferInternal, BUFFER_UNIT_SIZE)) {
         LOGE("unmap failed");
-        close(fd);
+        close(this->fd);
         return;
     }
 
-    bufferInternal = nullptr;
-    close(fd);
+    this->bufferInternal = nullptr;
+    close(this->fd);
 }
 
-
-
-bool Buffer::isInit() {
-    return init;
+bool Buffer::isInit() const {
+    return this->init;
 }
-
 
 const char *Buffer::getFilePath() {
-    return cachePath;
+    return this->cachePath;
+}
+
+size_t Buffer::parseDaraLength() {
+    if(!this->bufferInternal) return 0;
+    uint32_t dataLength;
+    memcpy(&dataLength, bufferInternal, POSITION_TIMESTAMP - POSITION_LENGTH);
+    if(isLittleEndian()) {
+        reverse((uint8_t *) &dataLength, POSITION_TIMESTAMP - POSITION_LENGTH);
+    }
+    return dataLength;
+}
+
+uint64_t Buffer::parseTimestamp() {
+    uint8_t *tmp = bufferInternal + POSITION_TIMESTAMP;
+    uint64_t timestamp;
+    const size_t len = POSITION_DATA - POSITION_TIMESTAMP;
+    memcpy(&timestamp, tmp, len);
+    if(isLittleEndian()) {
+        reverse((uint8_t*)&timestamp, len);
+    }
+    return timestamp;
+}
+
+void Buffer::flush() {
+    LOGI("[Buffer] flush invoked, path:%s, data length:%d", logPath.c_str(), actualSize);
+    FileOption::writeFile(this->logPath.c_str(), this->bufferInternal, this->actualSize);
+    this->actualSize = 0;
+    this->timestampUpdate = 0;
+    this->off = POSITION_DATA;
+}
+
+size_t Buffer::remain() const {
+    return BUFFER_UNIT_SIZE - this->actualSize;
+}
+
+void Buffer::updateDataLength(size_t length) {
+    uint8_t *tmp = this->bufferInternal + POSITION_LENGTH;
+    if(isLittleEndian()) {
+        reverse((uint8_t*)&length, POSITION_TIMESTAMP);
+    }
+    memcpy(tmp, &length, POSITION_TIMESTAMP);
+}
+
+void Buffer::updateTimestamp(uint64_t timestamp) {
+    uint8_t *tmp = this->bufferInternal + POSITION_TIMESTAMP;
+    if(isLittleEndian()) {
+        reverse((uint8_t *) &timestamp, POSITION_DATA - POSITION_TIMESTAMP);
+    }
+    memcpy(tmp, &timestamp, POSITION_DATA - POSITION_TIMESTAMP);
+}
+
+Buffer::~Buffer() {
+    delete [] this->cachePath;
 }
