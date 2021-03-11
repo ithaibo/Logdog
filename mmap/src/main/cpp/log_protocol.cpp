@@ -27,9 +27,11 @@ Header LogProtocol::createLogHeader(uint32_t type, unsigned long crc32, std::str
     return header;
 }
 
+//TODO 优化：返回指针
 HbLog LogProtocol::createLogItem(uint8_t *logContent, size_t lengthBody) {
     HbLog log;
-    log.body.content = logContent;//
+    log.body.content = new uint8_t[lengthBody];
+    memcpy(log.body.content, logContent, lengthBody);
     unsigned long crc = crc32(0L, (Bytef*)log.body.content, lengthBody);
     std::string emptyOther;
     log.header = createLogHeader(LogType::E2E, crc, emptyOther, lengthBody);

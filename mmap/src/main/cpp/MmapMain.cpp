@@ -21,46 +21,38 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     if (!content_chars || !buffer || !buffer->isInit()) return false;
     int length = strlen(content_chars);
 
-    //compress
-    ByteBuffer compressedStr(64);
-    int lengthAfterCompress;
-
-    unsigned long long start, end;
-    if(COMPRESS) {
-        start = getTimeUSDNow();
-        auto *tmp = new uint8_t[length];
-        memcpy(tmp, content_chars, length);
-        int codeCompress = compress(tmp, length,compressedStr, Z_BEST_COMPRESSION);
-        delete [] tmp;
-        end = getTimeUSDNow();
-        LogTrace::Pair<LogTrace::ActionId, unsigned long long > zip(
-                LogTrace::ActionId::zip, end -start);
-        MmapMain::getTrace()->timeCostVector.push_back(zip);
-        if(Z_OK != codeCompress) {
-            LOGE("[mmap] compress failed");
-            return false;
-        }
-        lengthAfterCompress = compressedStr.getSize();
-        LOGI("[MapMain] length after compressed:%d", lengthAfterCompress);
-    } else {
-        compressedStr.append(reinterpret_cast<const uint8_t *>(content_chars), length);
-        lengthAfterCompress = length;
-    }
-    start = getTimeUSDNow();
-    HbLog log = LogProtocol::createLogItem(compressedStr.getData(),lengthAfterCompress);
-    end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(LogTrace::ActionId::protocol,end - start);
-    MmapMain::getTrace()->timeCostVector.push_back(protocol);
-    LOGD("return fro, createLogItem invoked, log addr:%d", &log);
-    printLog(log);
 
     //serialize
+    HbLog log = LogProtocol::createLogItem((uint8_t *) content_chars, length);
     DefaultSerializer serializer;
-    uint8_t *toSave = serializer.visit(&log);
-    LOGW("[MapMain] all prepare done!");
+    uint8_t *serialized = serializer.visit(&log);
+    delete [] log.body.content;
+    LOGD("[Main] serialize done.");
+
+    //compress
+    LOGD("[main] start to compress, input length:%d", log.logLength);
+    unsigned long long start, end;
+    start = getTimeUSDNow();
+    ByteBuffer compressedBuffer(64);
+    int lengthAfterCompress;
+    int codeCompress = compress(serialized, log.logLength, compressedBuffer, Z_BEST_COMPRESSION);
+    delete [] serialized;
+    if (Z_OK != codeCompress) {
+        LOGE("[mmap] compress failed");
+        return false;
+    }
+    end = getTimeUSDNow();
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long> zip(LogTrace::ActionId::zip, end - start);
+    MmapMain::getTrace()->timeCostVector.push_back(zip);
+    lengthAfterCompress = compressedBuffer.getSize();
+    LOGI("[MapMain] length after compressed:%d", lengthAfterCompress);
+
+    //encrypt
+    LOGD("[main] encrypt....");
+
     //save
     bool resultAppend = true;
-    resultAppend = buffer->append(toSave, log.logLength);
+    resultAppend = buffer->append(compressedBuffer.getData(), log.logLength);
 //    delete [] toSave;
     return resultAppend;
 }
