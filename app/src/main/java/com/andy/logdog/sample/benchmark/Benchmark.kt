@@ -55,7 +55,7 @@ class Benchmark : AppCompatActivity() {
 //            result.timeCost = end - start
 //            result.contentLength = lengthContent
 //            result.writeType = "mmap"
-            Log.i("Benchmark", "all done!")
+//            Log.i("Benchmark", "all done!")
 //            tv_mmap.post { tv_mmap.text = result.toString() }
 //        }
 //        logdogThread.name = "Logdog"

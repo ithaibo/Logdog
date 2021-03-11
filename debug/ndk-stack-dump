@@ -1,0 +1,29 @@
+AndydeMacBook-Pro:Logdog andy$ adb logcat | ndk-stack -sym /Users/andy/labs/android/Logdog/mmap/build/intermediates/cmake/debug/obj/armeabi-v7a/libmmap-lib.so
+********** Crash dump: **********
+Build fingerprint: 'HONOR/OXF-AN10/HWOXF:10/HUAWEIOXF-AN10/11.0.0.172C00:user/release-keys'
+#00 0x0005e928 /system/lib/libgui.so (android::BpGraphicBufferProducer::query(int, int*)+68) (BuildId: a782f92d6fb09072464de074d495bddc)
+#01 0x00085683 /system/lib/libgui.so (android::Surface::query(int, int*) const+126) (BuildId: a782f92d6fb09072464de074d495bddc)
+#02 0x00217631 /system/lib/libhwui.so (android::uirenderer::renderthread::CanvasContext::getNextFrameSize() const+20) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#03 0x00217603 /system/lib/libhwui.so (android::uirenderer::TreeInfo::TreeInfo(android::uirenderer::TreeInfo::TraversalMode, android::uirenderer::renderthread::CanvasContext&)+106) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#04 0x0021734f /system/lib/libhwui.so (_ZNSt3__110__function6__funcIZN7android10uirenderer12renderthread13DrawFrameTask11postAndWaitEvE3$_0NS_9allocatorIS6_EEFvvEEclEv$c303f2d2360db58ed70a2d0ac7ed911b+94) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#05 0x00213dc3 /system/lib/libhwui.so (android::uirenderer::WorkQueue::process()+158) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#06 0x00213c1b /system/lib/libhwui.so (android::uirenderer::renderthread::RenderThread::threadLoop()+54) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#07 0x0000d913 /system/lib/libutils.so (android::Thread::_threadLoop(void*)+186) (BuildId: 642435e71e7c239a541730a0a041b876)
+#08 0x0009c557 /apex/com.android.runtime/lib/bionic/libc.so (__pthread_start(void*)+20) (BuildId: fc1a7f107c69283e5e2e3f151f978619)
+#09 0x00055a07 /apex/com.android.runtime/lib/bionic/libc.so (__start_thread+30) (BuildId: fc1a7f107c69283e5e2e3f151f978619)
+Crash dump is completed
+
+
+
+
+********** Crash dump: **********
+Build fingerprint: 'HONOR/OXF-AN10/HWOXF:10/HUAWEIOXF-AN10/11.0.0.172C00:user/release-keys'
+#00 0x00073c92 /system/lib/libgui.so (android::BpDisplayEventConnection::requestNextVsync()+62) (BuildId: a782f92d6fb09072464de074d495bddc)
+#01 0x00070e99 /system/lib/libgui.so (android::DisplayEventReceiver::requestNextVsync()+18) (BuildId: a782f92d6fb09072464de074d495bddc)
+#02 0x000deed1 /system/lib/libhwui.so (android::uirenderer::renderthread::DisplayEventReceiverWrapper::requestNextVsync()+4) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#03 0x00213c83 /system/lib/libhwui.so (android::uirenderer::renderthread::RenderThread::threadLoop()+158) (BuildId: 54b449d5b891e643291a1cf6ff15267d)
+#04 0x0000d913 /system/lib/libutils.so (android::Thread::_threadLoop(void*)+186) (BuildId: 642435e71e7c239a541730a0a041b876)
+#05 0x0009c557 /apex/com.android.runtime/lib/bionic/libc.so (__pthread_start(void*)+20) (BuildId: fc1a7f107c69283e5e2e3f151f978619)
+#06 0x00055a07 /apex/com.android.runtime/lib/bionic/libc.so (__start_thread+30) (BuildId: fc1a7f107c69283e5e2e3f151f978619)
+Crash dump is completed
+

@@ -32,15 +32,15 @@ void Buffer::initFile() {
         return;
     }
     //parse data length
-    this->actualSize = parseDaraLength();
+    size_t actualSize = parseDaraLength();
     //parse last update time
     this->timestampUpdate = parseTimestamp();
 
-    if(this->actualSize > 0) {
+    if(actualSize > 0) {
         // flush to file
         flush();
     } else {
-        this->off = this->actualSize + POSITION_DATA;
+        this->off = actualSize + POSITION_DATA;
     }
     this->init = true;
     LOGD("[Buffer-initFile] done");
@@ -48,11 +48,14 @@ void Buffer::initFile() {
 
 bool Buffer::createNewBuffer() {
     FileOption fileOption;
+    bool cacheFileExisted = fileOption.fileExists(this->cachePath);
     this->fd = fileOption.openFdForMMAP(this->cachePath);
     if(this->fd == -1) {
+        LOGE("[Buffer] cache file open failed!");
         return false;
     }
     if(ftruncate(fd, static_cast<off_t>(BUFFER_UNIT_SIZE)) != 0) {
+        LOGE("[Buffer] truncate file failed!");
         return false;
     }
     this->bufferInternal = (uint8_t *) mmap(nullptr,
@@ -64,6 +67,10 @@ bool Buffer::createNewBuffer() {
     if(this->bufferInternal == MAP_FAILED) {
         LOGE("[Buffer] create map memory failed, reason: %s", strerror(errno));
         return false;
+    }
+    if(!cacheFileExisted) {
+        updateDataLength(0);
+        updateTimestamp(0);
     }
     return true;
 }
@@ -82,14 +89,14 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
     size_t saved;
     while (lengthToSave > 0) {
         if (remain() > 0) {
+            LOGI("[Buffer] length to save:%d, off now:%d, remain:%d", lengthToSave, off, remain());
             saved = lengthToSave > remain()? remain() : lengthToSave;
             memcpy(this->bufferInternal + this->off, temp, saved);
             copyTimes++;
             this->off += saved;
             temp += saved;
-            this->actualSize += saved;
             lengthToSave -= saved;
-            updateDataLength(actualSize);
+            updateDataLength(off - POSITION_DATA);
             this->timestampUpdate = getTimeStamp();
             updateTimestamp(this->timestampUpdate);
             continue;
@@ -100,6 +107,7 @@ bool Buffer::append(const uint8_t *content, size_t lengthToSave) {
         LOGI("[Buffer-append] buffer full, flush data to file.");
         flush();
     }
+    LOGD("[Buffer] cache done, off now:%d, remain:%d", off, remain());
     return true;
 }
 
@@ -127,11 +135,11 @@ void Buffer::onExit() {
         close(this->fd);
         return;
     }
-    if(0 != msync(this->bufferInternal, BUFFER_UNIT_SIZE, MS_SYNC)) {
-        LOGE("sync failed");
-        close(this->fd);
-        return;
-    }
+//    if(0 != msync(this->bufferInternal, BUFFER_UNIT_SIZE, MS_SYNC)) {
+//        LOGE("sync failed");
+//        close(this->fd);
+//        return;
+//    }
     if(-1 == munmap(this->bufferInternal, BUFFER_UNIT_SIZE)) {
         LOGE("unmap failed");
         close(this->fd);
@@ -172,18 +180,23 @@ uint64_t Buffer::parseTimestamp() {
 }
 
 void Buffer::flush() {
-    LOGI("[Buffer] flush invoked, path:%s, data length:%d", logPath.c_str(), actualSize);
-    FileOption::writeFile(this->logPath.c_str(), this->bufferInternal, this->actualSize);
-    this->actualSize = 0;
+    const int lengthToSave = off - POSITION_DATA;
+    if(lengthToSave <= 0) {
+        LOGE("[Buffer] no content to flush");
+        return;
+    }
+    LOGI("[Buffer] flush invoked, path:%s, data length:%d", logPath.c_str(), off - POSITION_DATA);
+    FileOption::writeFile(this->logPath.c_str(), this->bufferInternal, off - POSITION_DATA);
     this->timestampUpdate = 0;
     this->off = POSITION_DATA;
 }
 
 size_t Buffer::remain() const {
-    return BUFFER_UNIT_SIZE - this->actualSize;
+    return BUFFER_UNIT_SIZE - off;
 }
 
 void Buffer::updateDataLength(size_t length) {
+    LOGI("update date length:%d", length);
     uint8_t *tmp = this->bufferInternal + POSITION_LENGTH;
     if(isLittleEndian()) {
         reverse((uint8_t*)&length, POSITION_TIMESTAMP);
@@ -192,6 +205,7 @@ void Buffer::updateDataLength(size_t length) {
 }
 
 void Buffer::updateTimestamp(uint64_t timestamp) {
+    LOGI("update timestamp:%lld", timestamp);
     uint8_t *tmp = this->bufferInternal + POSITION_TIMESTAMP;
     if(isLittleEndian()) {
         reverse((uint8_t *) &timestamp, POSITION_DATA - POSITION_TIMESTAMP);

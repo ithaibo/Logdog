@@ -32,7 +32,7 @@ public:
     ~Buffer();
 
     bool isInit() const;
-    inline void doInit(const char* path) {
+    void doInit(const char* path) {
         setFilePath(path);
         initFile();
     }
@@ -72,8 +72,8 @@ protected:
     std::string logDir;
 
     uint64_t timestampUpdate;
-    /**当前文件写入内容的大小*/
-    size_t actualSize = 0;
+//    /**当前文件写入内容的大小*/
+//    size_t actualSize = 0;
 
     bool init;
 

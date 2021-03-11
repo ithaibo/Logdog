@@ -85,8 +85,8 @@ public class Mmap {
         buffer = -1;
     }
 
-    public native boolean mmapWrite(long buffer, @NonNull String content);
     public native long createBuffer(@NonNull String path);
+    public native boolean mmapWrite(long buffer, @NonNull String content);
     public native String readFile(long buffer);
     public native void onExit(long buffer);
 }

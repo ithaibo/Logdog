@@ -24,9 +24,10 @@
 
 #else
 #define LOGD(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-		#define LOGI(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-		#define LOGW(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
-		#define LOGE(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+#define LOGI(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+#define LOGW(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+#define LOGE(fmt, ...) printf(fmt"\n", ##__VA_ARGS__)
+
 #endif
 #else
 #define LOGD(...);

@@ -12,12 +12,13 @@
 
 int compress(const uint8_t *inString, size_t inLength,
              ByteBuffer &out_str, int level) {
+    const uint8_t *tmp = inString;
     if (!ZIP) {
-        out_str.append(inString, inLength);
+        out_str.append(tmp, inLength);
         return Z_OK;
     }
 
-    if (!inString) return Z_DATA_ERROR;
+    if (!tmp) return Z_DATA_ERROR;
 
     int ret;
     int flush;
@@ -35,18 +36,18 @@ int compress(const uint8_t *inString, size_t inLength,
         return ret;
     }
 
-    const uint8_t * end = inString + inLength;
+    const uint8_t * end = tmp + inLength;
 
     size_t distance;
 
     /// compress until end of file
     do {
-        distance = end - inString;
+        distance = end - tmp;
         stream.avail_in = (distance >= CHUNK)? CHUNK : distance;
-        stream.next_in = (Bytef *)inString;
+        stream.next_in = (Bytef *)tmp;
         /// next pos
-        inString += stream.avail_in;
-        flush = (inString == end)? Z_FINISH : Z_NO_FLUSH;
+        tmp += stream.avail_in;
+        flush = (tmp == end)? Z_FINISH : Z_NO_FLUSH;
         /// run deflate() on input until output buffer not full, finish
         /// compression if all of source has been read in
         do {

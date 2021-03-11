@@ -28,10 +28,10 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     unsigned long long start, end;
     if(COMPRESS) {
         start = getTimeUSDNow();
-        int codeCompress = compress((uint8_t *) content_chars,
-                length,
-                compressedStr,
-                Z_BEST_COMPRESSION);
+        auto *tmp = new uint8_t[length];
+        memcpy(tmp, content_chars, length);
+        int codeCompress = compress(tmp, length,compressedStr, Z_BEST_COMPRESSION);
+        delete [] tmp;
         end = getTimeUSDNow();
         LogTrace::Pair<LogTrace::ActionId, unsigned long long > zip(
                 LogTrace::ActionId::zip, end -start);
@@ -43,35 +43,25 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
         lengthAfterCompress = compressedStr.getSize();
         LOGI("[MapMain] length after compressed:%d", lengthAfterCompress);
     } else {
-        compressedStr.append(
-                reinterpret_cast<const uint8_t *>(content_chars),
-                length);
+        compressedStr.append(reinterpret_cast<const uint8_t *>(content_chars), length);
         lengthAfterCompress = length;
     }
     start = getTimeUSDNow();
-    HbLog log = LogProtocol::createLogItem(compressedStr.getData(),
-            lengthAfterCompress);
+    HbLog log = LogProtocol::createLogItem(compressedStr.getData(),lengthAfterCompress);
     end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(
-            LogTrace::ActionId::protocol,
-            end -start);
+    LogTrace::Pair<LogTrace::ActionId, unsigned long long > protocol(LogTrace::ActionId::protocol,end - start);
     MmapMain::getTrace()->timeCostVector.push_back(protocol);
     LOGD("return fro, createLogItem invoked, log addr:%d", &log);
     printLog(log);
 
     //serialize
-    start = getTimeUSDNow();
     DefaultSerializer serializer;
     uint8_t *toSave = serializer.visit(&log);
-    end = getTimeUSDNow();
-    LogTrace::Pair<LogTrace::ActionId, unsigned long long > serialize(
-            LogTrace::ActionId::serialize,
-            end -start);
-    MmapMain::getTrace()->timeCostVector.push_back(serialize);
     LOGW("[MapMain] all prepare done!");
     //save
     bool resultAppend = true;
-//  todo  resultAppend = buffer->append(toSave, log.logLength);
+    resultAppend = buffer->append(toSave, log.logLength);
+//    delete [] toSave;
     return resultAppend;
 }
 

@@ -75,18 +75,12 @@ static jboolean mmapWrite(JNIEnv *env, jobject thiz, jlong buffer, jstring conte
     bool saveResult;
 
     LOGD("[bridge], is little endian:%d", isLittleEnd());
+//    LOGD("[bridge], to save, length::%d", strlen(content_chars));
     saveResult = MmapMain::mmapWrite(getBuffer(buffer), content_chars);
 
-    //todo all done
-//    MmapMain::getTrace()->flush2File();
-
-//    unsigned long long timeEnd = getTimeUSDNow();
-//    LOGI("[bridge] time cost write:%llu", (timeEnd - timestart));
     env->ReleaseStringUTFChars(content, content_chars);
-    LOGW("[bridge] mmap wirte done, release arguments success.");
     return saveResult;
 }
-
 
 /**
  * 从指定的buffer中读取内容
@@ -131,7 +125,6 @@ static jstring readFile(JNIEnv *env, jobject thiz, jlong buffer) {
 static void onExit(JNIEnv *env, jobject thiz, jlong buffer) {
     MmapMain::flushAndArchive(getBuffer(buffer));
 }
-
 
 static JNINativeMethod methods[] = {
         {"createBuffer", "(Ljava/lang/String;)J",  (void *) createBuffer},

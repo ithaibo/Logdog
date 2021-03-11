@@ -31,14 +31,14 @@ class MyApp : MultiDexApplication() {
         super.onCreate()
         app = this
         initLogdog()
-        initSyncLog()
+//        initSyncLog()
 //        initXLog()
-        initLogan()
+//        initLogan()
     }
 
 
     private fun initLogdog() {
-        val file = File(this.getExternalFilesDir(null), "logdog")
+        val file = File(this.filesDir, "logdog")
         val path = file.absolutePath
         if (!file.exists()) {
             file.mkdirs()
@@ -63,8 +63,7 @@ class MyApp : MultiDexApplication() {
 
     override fun onTerminate() {
         super.onTerminate()
-        Mmap.getInstance().release()
-        initLogan()
+//        Mmap.getInstance().release()
     }
 
     private fun initLogan() {
