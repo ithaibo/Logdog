@@ -9,7 +9,6 @@
 #include <iostream>
 #include <fstream>
 
-#define COMPRESS true
 
 Buffer *MmapMain::createBuffer(const char *path) {
     auto *buffer = new Buffer();
@@ -47,7 +46,7 @@ bool MmapMain::mmapWrite(Buffer *buffer, const char *content_chars) {
     lengthAfterCompress = compressedBuffer.getSize();
     LOGI("[MapMain] length after compressed:%d", lengthAfterCompress);
 
-    //encrypt
+    //TODO encrypt
     LOGD("[main] encrypt....");
 
     //save
