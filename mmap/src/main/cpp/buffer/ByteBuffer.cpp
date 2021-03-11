@@ -6,6 +6,7 @@
 #include "ByteBuffer.h"
 
 ByteBuffer::ByteBuffer(uint32_t capacity) {
+    this->capacity = capacity;
     this->data = new uint8_t [capacity];
     this->size = 0;
     this->position = 0;
@@ -16,18 +17,24 @@ ByteBuffer::~ByteBuffer() {
 }
 
 void ByteBuffer::append(const uint8_t *content, uint32_t len) {
-    int offInput = 0;
-    while (len > 0) {
-        int lenCopy = remain() > len? len : remain();
-        memcpy(this->data + this->position, content + offInput, lenCopy);
-        len -= lenCopy;
-        offInput += lenCopy;
+    uint8_t *ptr = data + size;
+    const uint8_t *ptrInput = content;
+    uint32_t lastLen = len;
+    while (lastLen > 0) {
+        int lenCopy = remain() > lastLen? lastLen : remain();
+        memcpy(ptr, ptrInput, lenCopy);
+
+        ptr += lenCopy;
+        ptrInput += lenCopy;
         size += lenCopy;
-        this->position += lenCopy;
+        lastLen -= lenCopy;
+
         if (remain() <= 0) {
             expand();
+            ptr = data + size;
         }
     }
+    position = size;
 }
 
 uint32_t ByteBuffer::getCapacity() {
@@ -52,10 +59,11 @@ uint32_t ByteBuffer::remain() {
 }
 
 void ByteBuffer::expand() {
-    auto *temp = new uint8_t[this->position * 2];
-    this->position *= 2;
+    this->capacity *= 2;
+    auto *temp = new uint8_t[this->capacity];
     memcpy(temp, this->data, this->size);
     delete [] this->data;
+    this->data = nullptr;
     this->data = temp;
 }
 
